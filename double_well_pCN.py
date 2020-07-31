@@ -4,7 +4,7 @@ import seaborn as sns
 sns.set_style("darkgrid")
 from pathlib import Path
 
-from BM_prior import samplePrior, get_KL_weights, inverseKL, evects, evals, sampleG, dt, num_pt
+from BM_prior import samplePrior, dt, num_pt
 from forward_models import solve_DW
 
 """

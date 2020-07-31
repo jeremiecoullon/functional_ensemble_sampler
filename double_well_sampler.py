@@ -4,9 +4,11 @@ import time
 import multiprocessing as mp
 import os
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
+from scipy import linalg as scipy_LA
 from pathlib import Path
 
-from BM_prior import samplePrior, get_KL_weights, inverseKL, evects, evals, sampleG, dt, num_pt
+from BM_prior import samplePrior, sampleG, dt, num_pt, logPriorBM, cov_BM
+# from BM_prior import get_KL_weights, inverseKL, evects, evals
 from forward_models import solve_DW
 
 """
@@ -15,13 +17,13 @@ Data: 20 observations with obs_noise = 0.1
 """
 
 
-N = 10000
+N = 100000
 thin_step = 100
 
 omega = 0.24
 M_trunc = 10
 L = 20
-a_prop = 1.5
+a_prop = 2
 
 # ================
 # ================
@@ -50,19 +52,40 @@ def loglikelihood(W):
     return -0.5 * (1/sigma_obs**2) * np.sum(np.square(le_obs - predicted_values))
 
 
-
-Prec_lowrank = np.linalg.multi_dot([evects[:, -M_trunc:], np.diag(1/evals[-M_trunc:]), evects[:, -M_trunc:].T])
-
-def low_rank_prior(xCurrent, xNew):
-    "GP prior for finite dimensional subspace"
-    return -0.5*(np.linalg.multi_dot([xNew, Prec_lowrank, xNew]) - np.linalg.multi_dot([xCurrent, Prec_lowrank, xCurrent]))
-
-
 if L < M_trunc+1:
     raise ValueError(f"Number of walkers must be >= {M_trunc+1} (d+1). ")
 
+
+# ===============
+# KL transform:
+# evals, evects = np.linalg.eigh(cov_BM)
+
+# Approximated LIS:
+dir_name = "outputs/double_well_sampler/pCN/"
+samplespaths_pCN = np.genfromtxt(f"{dir_name}/vanilla_sampler-paths.txt")
+post_cov = np.cov(samplespaths_pCN[500:, :].T)
+post_cov[0,0] = 1e-15
+evals, evects = scipy_LA.eigh(post_cov, cov_BM)
+
+
+
+
+
+# ===============
+
+def get_KL_weights(x):
+    return evects.T @ x
+
+def inverseKL(w):
+    return evects @ w
+
 # Matrices to project on finite basis and CS:
-project_M_lowfreq = evects[:, -M_trunc:] @ evects[:, -M_trunc:].T
+# project_M_lowfreq = evects[:, -M_trunc:] @ evects[:, -M_trunc:].T
+
+# for LIS
+project_M_lowfreq = evects[:, :M_trunc] @ evects[:, :M_trunc].T
+
+
 project_M_highfreq = np.eye(num_pt) - project_M_lowfreq
 
 
@@ -79,16 +102,27 @@ def ensemble_step_DW(args):
     """
     currentX, otherX, M_trunc, a_prop, omega, currentLogPost = args
 
-    # stretch move
-    w_j0 = get_KL_weights(otherX)[-M_trunc:]
     w_k = get_KL_weights(currentX)
-    w_k_start, w_k_end = w_k[:-M_trunc], w_k[-M_trunc:]
+    # prior basis
+    # w_j0 = get_KL_weights(otherX)[-M_trunc:]
+
+
+    # LIS
+    w_j0 = get_KL_weights(otherX)[:M_trunc]
+    w_k_start, w_k_end = w_k[:M_trunc], w_k[M_trunc:]
     Z = sampleG(a_prop)
-    wProp_end = w_j0*(1-Z) + Z*w_k_end
-    xProp = inverseKL(np.concatenate([w_k_start, wProp_end]))
+    wProp_start = w_j0*(1-Z) + Z*w_k_start
+    xProp = inverseKL(np.concatenate([wProp_start, w_k_end]))
+
+
+    # prior basis
+    # w_k_start, w_k_end = w_k[:-M_trunc], w_k[-M_trunc:]
+    # Z = sampleG(a_prop)
+    # wProp_end = w_j0*(1-Z) + Z*w_k_end
+    # xProp = inverseKL(np.concatenate([w_k_start, wProp_end]))
 
     logPost_prop = loglikelihood(W=xProp)
-    log_alpha = (M_trunc-1)*np.log(Z) + logPost_prop - currentLogPost + low_rank_prior(xCurrent=currentX, xNew=xProp)
+    log_alpha = (M_trunc-1)*np.log(Z) + logPost_prop - currentLogPost + logPriorBM(xProp) - logPriorBM(currentX)
     if np.log(np.random.uniform(0,1)) < log_alpha:
         currentX = xProp[:]
         currentLogPost = logPost_prop
@@ -135,7 +169,7 @@ num_accepts_AIES = 0
 num_accepts_PCN = 0
 
 
-dir_name = f"outputs/double_well_sampler/ensemble_sampler/L_{L}-a_{a_prop}"
+dir_name = f"outputs/double_well_sampler/ensemble_sampler/LISapprox/L_{L}-a_{a_prop}"
 Path(dir_name).mkdir(exist_ok=True)
 
 
