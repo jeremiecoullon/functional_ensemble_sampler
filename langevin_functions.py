@@ -4,7 +4,9 @@ from forward_models import solve_Langevin
 from BM_prior import samplePrior, x_range, dt, num_pt, get_KL_weights, inverseKL, sampleG, evects, evals, logPriorBM
 
 
-true_path = np.sin(x_range)
+# true_path = np.sin(x_range)
+# True path generated with alpha=5, sigma=0.5
+true_path = np.genfromtxt("data/langevin_problem/langevin_true_Xt.txt")
 
 array_obs_points = np.arange(0.5, 10.5, 2)
 obs_time_points = list(map(int, array_obs_points/dt - 1))
@@ -12,7 +14,7 @@ sigma_obs = 0.2
 
 # le_obs = true_path[obs_time_points] + np.random.normal(loc=0, scale=sigma_obs, size=len(obs_time_points))
 # np.savetxt("bimodal_observations.txt", le_obs)
-le_obs = np.genfromtxt("bimodal_observations.txt")
+le_obs = np.genfromtxt("data/langevin_problem/bimodal_observations.txt")
 
 
 def loglikelihood(W, alpha, sigma):
@@ -25,8 +27,9 @@ def loglikelihood(W, alpha, sigma):
     predicted_values = X_t[obs_time_points]
     return -0.5 * (1/sigma_obs**2) * np.sum(np.square(le_obs - predicted_values))
 
-sigma_hyperparam = 3
-alpha_hyperparam = 8
+sigma_hyperparam = 4
+alpha_hyperparam = 12
+
 
 def log_prior_log_sigma(log_sigma):
     """

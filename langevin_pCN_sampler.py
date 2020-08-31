@@ -8,17 +8,17 @@ from BM_prior import samplePrior, x_range, dt, num_pt, logPriorBM
 from langevin_functions import true_path, le_obs, array_obs_points, log_post, sigma_obs
 
 
-# Proposal covariance fit to a pre-run
-cov_parm_pCN = 0.05*np.array([[0.64803975, 0.28155184],
-               [0.28155184, 0.36483653]])
-
-N_pCN = 500000
+# Proposal covariance fit to a prerun of 500K. for alpha~Exp(12), sigma~Exp(4)
+cov_parm_pCN = 0.05*np.array([[1.17901601, 0.52205976],
+                           [0.52205976, 0.55162661]])
+N_pCN = 5000000
 omega = 0.08
 
 thin_step = 100
 
 
-dir_name = f"outputs/langevin_sampler/sigma-3_alpha-8/pCN_sampler"
+# dir_name = f"outputs/langevin_sampler/sigma-3_alpha-8/pCN_sampler"
+dir_name = f"outputs/langevin_sampler/sigma-4_alpha-12/pCN_sampler"
 Path(dir_name).mkdir(exist_ok=True)
 
 N_thin = int(N_pCN/thin_step)
@@ -56,7 +56,7 @@ for i in range(1, N_pCN):
         samplespCN[i_thin] = currentSamplepCN
         samples_alphapCN[i_thin] = current_alphapCN
         samples_sigmapCN[i_thin] = current_sigmapCN
-    if i%20000==0:
+    if i%100000==0:
         print(f"Iteration {i}/{N_pCN}")
         np.savetxt(f"{dir_name}/pCN_sampler-paths.txt", samplespCN[:, :])
         np.savetxt(f"{dir_name}/pCN_sampler-alpha.txt", samples_alphapCN[:])

@@ -8,22 +8,36 @@ from forward_models import solve_Langevin
 from BM_prior import samplePrior, x_range, dt, num_pt, get_KL_weights, inverseKL, sampleG, evects, evals, logPriorBM
 from langevin_functions import true_path, le_obs, array_obs_points, log_post, sigma_obs
 
+"Joint ensemble sampler"
+
 # ============
 # MCMC parameters
-N = 1000000
+N = 3000000
 thin_step = 100
 
-# omega = 0.42
-omega = 0.55
-# M_trunc = 10
+omega = 0.15
 M_trunc = 5
-L = 15
+L = 8
 a_prop = 2
 # ============
 
+# =====================
+# TEST SAMPLER
+# omega = 1
+# N = 50000
+# thin_step = 2
+# L = 8
+# from langevin_functions import log_prior_log_alpha, log_prior_log_sigma
+# def log_post(W, log_alpha, log_sigma):
+#     "Prior only: to test samplers"
+#     log_p_alpha = log_prior_log_alpha(log_alpha)
+#     log_p_sigma = log_prior_log_sigma(log_sigma)
+#     return log_p_alpha + log_p_sigma
+# =====================
 
-if L < M_trunc+1:
-    raise ValueError(f"Number of walkers must be >= {M_trunc+1} (d+1). ")
+
+if L < M_trunc+2:
+    raise ValueError(f"Number of walkers must be >= {M_trunc+2} (d+2). ")
 
 
 # Matrices to project on finite basis and CS:
@@ -40,7 +54,7 @@ def low_rank_prior(xCurrent, xNew):
 
 def ensemble_step(args):
     """
-    stetch move and pCN move for the ensemble sampler
+    Joint update for the low-dim subspace and the CS.
 
     Parameters:
     ----------
@@ -53,7 +67,8 @@ def ensemble_step(args):
     currentX, currentAlpha, currentSigma, otherX, otherAlpha, otherSigma, M_trunc, a_prop, omega, currentLogPost = args
 
     # stretch move
-    w_j0 = get_KL_weights(otherX)[-M_trunc:]
+    # w_j0 = get_KL_weights(otherX)[-M_trunc:]
+    w_j0 = evects[:,-M_trunc:].T @ otherX # more efficient than using `get_KL_weights`
     w_k = get_KL_weights(currentX)
     w_k_start, w_k_end = w_k[:-M_trunc], w_k[-M_trunc:]
     Z = sampleG(a_prop)
@@ -62,7 +77,9 @@ def ensemble_step(args):
     otherparm = np.concatenate([[otherAlpha, otherSigma], w_j0])
 
     alphaProp, sigmaProp, *wProp_end = otherparm*(1-Z) + Z*currentparm
-    xProp = inverseKL(np.concatenate([w_k_start, wProp_end]))
+    xPropJoint = inverseKL(np.concatenate([w_k_start, wProp_end]))
+
+    xProp = (project_M_lowfreq + np.sqrt(1-omega**2)*project_M_highfreq)@xPropJoint + omega*project_M_highfreq@samplePrior()
 
     logPost_prop = log_post(W=xProp, log_alpha=alphaProp, log_sigma=sigmaProp)
     log_alpha = (M_trunc+2-1)*np.log(Z) + logPost_prop - currentLogPost + low_rank_prior(xCurrent=currentX, xNew=xProp) # + logPriorBM(xProp) - logPriorBM(currentX)
@@ -74,22 +91,13 @@ def ensemble_step(args):
         acceptStretch = True
     else:
         acceptStretch = False
-
-    # pCN move
-    xProp = (project_M_lowfreq + np.sqrt(1-omega**2)*project_M_highfreq)@currentX + omega*project_M_highfreq@samplePrior()
-    newLogPost = log_post(W=xProp, log_alpha=currentAlpha, log_sigma=currentSigma)
-    log_alpha = newLogPost - currentLogPost
-    if np.log(np.random.uniform(0,1)) < log_alpha:
-        return xProp, currentAlpha, currentSigma, newLogPost, acceptStretch, True
-    else:
-        return currentX, currentAlpha, currentSigma, currentLogPost, acceptStretch, False
-
+    return currentX, currentAlpha, currentSigma, currentLogPost, acceptStretch
 
 
 
 # ================
 num_cores = mp.cpu_count()
-pool = mp.Pool(7)
+pool = mp.Pool(num_cores)
 
 
 N_thin = int(N/thin_step)
@@ -115,19 +123,19 @@ for k in range(L):
 
 logPostList[0, 0] = currentLogPost[0] # 0th walker
 logPostList[0, 1] = np.mean(currentLogPost) # average over all walkers
-num_accepts_AIES = 0
-num_accepts_PCN = 0
+num_accepts_joint = 0
 
 
 
-dir_name = f"outputs/langevin_sampler/sigma-3_alpha-6/ensemble_sampler/L_{L}-a_{a_prop}"
+# dir_name = f"outputs/langevin_sampler/sigma-3_alpha-8/ensemble_sampler/L_{L}-a_{a_prop}"
+dir_name = f"outputs/langevin_sampler/sigma-4_alpha-12/ensemble_sampler/L_{L}-a_{a_prop}/joint_update"
 Path(dir_name).mkdir(exist_ok=True)
 
 
 
 
 start_time = time.time()
-print(f"Running ensemble sampler for {N} iterations. M_trunc={M_trunc} and {L} walkers.\nProposal variance a={a_prop}\n")
+print(f"Running joint update ensemble sampler for {N} iterations. omega={omega}, M_trunc={M_trunc} and {L} walkers.\nProposal variance a={a_prop}\n")
 for i in range(N):
     mylist = list(range(L))
     np.random.shuffle(mylist)
@@ -149,14 +157,13 @@ for i in range(N):
 
         results = pool.map(ensemble_step, S_arg_list)
 
-        for k, (newX, newAlpha, newSigma, newLogPost, acceptStretch, acceptpCN) in zip(S_current, results):
+        for k, (newX, newAlpha, newSigma, newLogPost, acceptJoint) in zip(S_current, results):
             currentX[k,:] = newX
             currentAlpha[k] = newAlpha
             currentSigma[k] = newSigma
             currentLogPost[k] = newLogPost
-            num_accepts_AIES += int(acceptStretch)
-            num_accepts_PCN += int(acceptpCN)
-    if i%1000==0:
+            num_accepts_joint += int(acceptJoint)
+    if i%50000==0:
         print(f"Iteration {i}/{N}")
         # save 0th walker and average over walkers
         np.savetxt(f"{dir_name}/ensemble_sampler-walker0-paths_L{L}.txt", samples[:, 0, :])
@@ -185,10 +192,8 @@ print("Done")
 end_time = time.time()
 
 print(f"Running time {(end_time-start_time)/60:.2f}min")
-accept_rate_AIES = num_accepts_AIES / (N*L) * 100
-accept_rate_PCN = num_accepts_PCN / (N*L) * 100
-print(f"Acceptance rate for AIES: {accept_rate_AIES:.1f}%")
-print(f"Acceptance rate for pCN: {accept_rate_PCN:.1f}%")
+accept_rate_joint = num_accepts_joint / (N*L) * 100
+print(f"Acceptance rate: {accept_rate_joint:.1f}%")
 
 
 # save 0th walker and average over walkers
@@ -200,5 +205,5 @@ np.savetxt(f"{dir_name}/ensemble_sampler-average-paths_L{L}.txt", samples[:, 1, 
 np.savetxt(f"{dir_name}/ensemble_sampler-average-alpha_L{L}.txt", samplesAlpha[:, 1])
 np.savetxt(f"{dir_name}/ensemble_sampler-average-sigma_L{L}.txt", samplesSigma[:, 1])
 with open(f"{dir_name}/ensemble_sampler_info.txt", 'w') as f:
-    msg = f"""N = {N}\n\nthin_step={thin_step}\n\nL={L}\n\nomega={omega}\n\nM={M_trunc}, L={L}\n\nAcceptance rates:\nensemble: {accept_rate_AIES:.1f}%\npCN: {accept_rate_PCN:.1f}%"""
+    msg = f"""N = {N}\n\nthin_step={thin_step}\n\nL={L}\n\nomega={omega}\n\nM={M_trunc}, L={L}\n\nAcceptance rate: {accept_rate_joint:.1f}%"""
     f.write(msg)

@@ -8,6 +8,7 @@ outputs/*
 other_samples
 venv
 plots/*
-paper_drafts/*
+drafts/*
 *.so
 data/
+*.png

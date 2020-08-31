@@ -17,12 +17,13 @@ Data: 20 observations with obs_noise = 0.1
 """
 
 
-N = 100000
-thin_step = 100
+N = 500000
+thin_step = 10
 
-omega = 0.24
-M_trunc = 10
-L = 20
+# omega = 0.24
+omega = 0.15 # LIS
+M_trunc = 25
+L = 100
 a_prop = 2
 
 # ================
@@ -61,30 +62,32 @@ if L < M_trunc+1:
 # evals, evects = np.linalg.eigh(cov_BM)
 
 # Approximated LIS:
-dir_name = "outputs/double_well_sampler/pCN/"
-samplespaths_pCN = np.genfromtxt(f"{dir_name}/vanilla_sampler-paths.txt")
-post_cov = np.cov(samplespaths_pCN[500:, :].T)
-post_cov[0,0] = 1e-15
+post_cov = np.genfromtxt("outputs/double_well_sampler/empirical_post_cov.txt")
 evals, evects = scipy_LA.eigh(post_cov, cov_BM)
-
-
-
+assert np.allclose(np.linalg.inv(evects @ evects.T), cov_BM)
+XX = cov_BM @ evects
 
 
 # ===============
 
 def get_KL_weights(x):
     return evects.T @ x
+    # return VV @ x # LIS approx version
+    # return evects.T @ x # KL version
 
 def inverseKL(w):
-    return evects @ w
+    return XX @ w
+    # return evects.T @ w
+    #return evects @ w
 
 # Matrices to project on finite basis and CS:
 # project_M_lowfreq = evects[:, -M_trunc:] @ evects[:, -M_trunc:].T
 
+# ============
 # for LIS
-project_M_lowfreq = evects[:, :M_trunc] @ evects[:, :M_trunc].T
-
+XX_LIS = XX[:, :M_trunc]
+project_M_lowfreq = np.linalg.multi_dot([XX_LIS, np.linalg.inv(XX_LIS.T @ XX_LIS), XX_LIS.T])
+# ============
 
 project_M_highfreq = np.eye(num_pt) - project_M_lowfreq
 
@@ -103,19 +106,19 @@ def ensemble_step_DW(args):
     currentX, otherX, M_trunc, a_prop, omega, currentLogPost = args
 
     w_k = get_KL_weights(currentX)
-    # prior basis
-    # w_j0 = get_KL_weights(otherX)[-M_trunc:]
 
-
+    # =========
     # LIS
     w_j0 = get_KL_weights(otherX)[:M_trunc]
     w_k_start, w_k_end = w_k[:M_trunc], w_k[M_trunc:]
     Z = sampleG(a_prop)
     wProp_start = w_j0*(1-Z) + Z*w_k_start
     xProp = inverseKL(np.concatenate([wProp_start, w_k_end]))
+    # =========
 
 
     # prior basis
+    # w_j0 = get_KL_weights(otherX)[-M_trunc:]
     # w_k_start, w_k_end = w_k[:-M_trunc], w_k[-M_trunc:]
     # Z = sampleG(a_prop)
     # wProp_end = w_j0*(1-Z) + Z*w_k_end
@@ -123,6 +126,7 @@ def ensemble_step_DW(args):
 
     logPost_prop = loglikelihood(W=xProp)
     log_alpha = (M_trunc-1)*np.log(Z) + logPost_prop - currentLogPost + logPriorBM(xProp) - logPriorBM(currentX)
+    # print(f"log_alpha for L={L}: {log_alpha}")
     if np.log(np.random.uniform(0,1)) < log_alpha:
         currentX = xProp[:]
         currentLogPost = logPost_prop
@@ -144,7 +148,7 @@ def ensemble_step_DW(args):
 # ================
 # ================
 num_cores = mp.cpu_count()
-pool = mp.Pool(7)
+pool = mp.Pool(6)
 
 
 N_thin = int(N/thin_step)
@@ -175,7 +179,7 @@ Path(dir_name).mkdir(exist_ok=True)
 
 
 start_time = time.time()
-print(f"Running function space AIES for {N} iterations. M_trunc={M_trunc} and {L} walkers.\nProposal variance a={a_prop}\n")
+print(f"Running function space AIES for {N} iterations. omega={omega}, M_trunc={M_trunc} and {L} walkers.\nProposal variance a={a_prop}\n")
 for i in range(N):
 
     mylist = list(range(L))

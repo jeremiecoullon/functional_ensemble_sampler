@@ -10,20 +10,33 @@ from langevin_functions import true_path, le_obs, array_obs_points, log_post, si
 
 # ============
 # MCMC parameters
-N = 1000000
+N = 3000000
 thin_step = 100
 
-# omega = 0.42
 omega = 0.55
-# M_trunc = 10
 M_trunc = 5
-L = 15
+L = 100
 a_prop = 2
+prob_AIES = 0.5
 # ============
 
+# =====================
+# TEST SAMPLER: SAMPLE FROM THE PRIOR
+# omega = 1
+# N = 50000
+# thin_step = 2
+# L = 8
+# from langevin_functions import log_prior_log_alpha, log_prior_log_sigma
+# def log_post(W, log_alpha, log_sigma):
+#     "Prior only: to test samplers"
+#     log_p_alpha = log_prior_log_alpha(log_alpha)
+#     log_p_sigma = log_prior_log_sigma(log_sigma)
+#     return log_p_alpha + log_p_sigma
+# =====================
 
-if L < M_trunc+1:
-    raise ValueError(f"Number of walkers must be >= {M_trunc+1} (d+1). ")
+
+if L < M_trunc+2:
+    raise ValueError(f"Number of walkers must be >= {M_trunc+2} (d+2). ")
 
 
 # Matrices to project on finite basis and CS:
@@ -40,7 +53,7 @@ def low_rank_prior(xCurrent, xNew):
 
 def ensemble_step(args):
     """
-    stetch move and pCN move for the ensemble sampler
+    MwG proposal: alternate AIES and pCN move for the ensemble sampler
 
     Parameters:
     ----------
@@ -49,47 +62,63 @@ def ensemble_step(args):
         otherX, otherAlpha, otherSigma,
         M_trunc, a_prop, omega,
         currentLogPost
+
+    Returns:
+    currentX, currentAlpha, currentSigma, currentLogPost,
+    RSGS_param: string
+        either "AIES" or "CS"
+    acceptBool: Bool
     """
     currentX, currentAlpha, currentSigma, otherX, otherAlpha, otherSigma, M_trunc, a_prop, omega, currentLogPost = args
 
-    # stretch move
-    w_j0 = get_KL_weights(otherX)[-M_trunc:]
-    w_k = get_KL_weights(currentX)
-    w_k_start, w_k_end = w_k[:-M_trunc], w_k[-M_trunc:]
-    Z = sampleG(a_prop)
 
-    currentparm = np.concatenate([[currentAlpha, currentSigma], w_k_end])
-    otherparm = np.concatenate([[otherAlpha, otherSigma], w_j0])
+    le_coin = np.random.binomial(n=1, p=prob_AIES)
 
-    alphaProp, sigmaProp, *wProp_end = otherparm*(1-Z) + Z*currentparm
-    xProp = inverseKL(np.concatenate([w_k_start, wProp_end]))
+    if le_coin == 1:
+        RSGS_param = "AIES"
+        # stretch move
+        # w_j0 = get_KL_weights(otherX)[-M_trunc:]
+        w_j0 = evects[:,-M_trunc:].T @ otherX # more efficient than using `get_KL_weights`
+        w_k = get_KL_weights(currentX)
+        w_k_start, w_k_end = w_k[:-M_trunc], w_k[-M_trunc:]
+        Z = sampleG(a_prop)
 
-    logPost_prop = log_post(W=xProp, log_alpha=alphaProp, log_sigma=sigmaProp)
-    log_alpha = (M_trunc+2-1)*np.log(Z) + logPost_prop - currentLogPost + low_rank_prior(xCurrent=currentX, xNew=xProp) # + logPriorBM(xProp) - logPriorBM(currentX)
-    if np.log(np.random.uniform(0,1)) < log_alpha:
-        currentX = xProp[:]
-        currentAlpha = alphaProp
-        currentSigma = sigmaProp
-        currentLogPost = logPost_prop
-        acceptStretch = True
-    else:
-        acceptStretch = False
+        currentparm = np.concatenate([[currentAlpha, currentSigma], w_k_end])
+        otherparm = np.concatenate([[otherAlpha, otherSigma], w_j0])
 
-    # pCN move
-    xProp = (project_M_lowfreq + np.sqrt(1-omega**2)*project_M_highfreq)@currentX + omega*project_M_highfreq@samplePrior()
-    newLogPost = log_post(W=xProp, log_alpha=currentAlpha, log_sigma=currentSigma)
-    log_alpha = newLogPost - currentLogPost
-    if np.log(np.random.uniform(0,1)) < log_alpha:
-        return xProp, currentAlpha, currentSigma, newLogPost, acceptStretch, True
-    else:
-        return currentX, currentAlpha, currentSigma, currentLogPost, acceptStretch, False
+        alphaProp, sigmaProp, *wProp_end = otherparm*(1-Z) + Z*currentparm
+        xProp = inverseKL(np.concatenate([w_k_start, wProp_end]))
 
+        logPost_prop = log_post(W=xProp, log_alpha=alphaProp, log_sigma=sigmaProp)
+        log_alpha = (M_trunc+2-1)*np.log(Z) + logPost_prop - currentLogPost + low_rank_prior(xCurrent=currentX, xNew=xProp) # + logPriorBM(xProp) - logPriorBM(currentX)
 
+        if np.log(np.random.uniform(0,1)) < log_alpha:
+            currentX = xProp[:]
+            currentAlpha = alphaProp
+            currentSigma = sigmaProp
+            currentLogPost = logPost_prop
+            acceptBool = True
+        else:
+            acceptBool = False
+    elif le_coin == 0:
+        RSGS_param = "CS"
+        # pCN move
+        xProp = (project_M_lowfreq + np.sqrt(1-omega**2)*project_M_highfreq)@currentX + omega*project_M_highfreq@samplePrior()
+        newLogPost = log_post(W=xProp, log_alpha=currentAlpha, log_sigma=currentSigma)
+        log_alpha = newLogPost - currentLogPost
+        if np.log(np.random.uniform(0,1)) < log_alpha:
+            currentX = xProp[:]
+            currentLogPost = newLogPost
+            acceptBool = True
+        else:
+            acceptBool = False
+
+    return currentX, currentAlpha, currentSigma, currentLogPost, RSGS_param, acceptBool
 
 
 # ================
 num_cores = mp.cpu_count()
-pool = mp.Pool(7)
+pool = mp.Pool(num_cores)
 
 
 N_thin = int(N/thin_step)
@@ -117,17 +146,21 @@ logPostList[0, 0] = currentLogPost[0] # 0th walker
 logPostList[0, 1] = np.mean(currentLogPost) # average over all walkers
 num_accepts_AIES = 0
 num_accepts_PCN = 0
+num_proposals_AIES = 0
+num_proposals_pCN = 0
 
 
+# dir_name = f"outputs/langevin_sampler/test_sampler_sigma3_alpha8/ensemble_sampler/L_{L}-a_{a_prop}"
 
-dir_name = f"outputs/langevin_sampler/sigma-3_alpha-6/ensemble_sampler/L_{L}-a_{a_prop}"
+# dir_name = f"outputs/langevin_sampler/sigma-3_alpha-8/ensemble_sampler/L_{L}-a_{a_prop}"
+dir_name = f"outputs/langevin_sampler/sigma-4_alpha-12/ensemble_sampler/L_{L}-a_{a_prop}/MwG_equal_prob"
 Path(dir_name).mkdir(exist_ok=True)
 
 
 
 
 start_time = time.time()
-print(f"Running ensemble sampler for {N} iterations. M_trunc={M_trunc} and {L} walkers.\nProposal variance a={a_prop}\n")
+print(f"Running MwG ensemble sampler for {N} iterations. M_trunc={M_trunc} and {L} walkers.\nProposal variance a={a_prop}\n")
 for i in range(N):
     mylist = list(range(L))
     np.random.shuffle(mylist)
@@ -149,14 +182,21 @@ for i in range(N):
 
         results = pool.map(ensemble_step, S_arg_list)
 
-        for k, (newX, newAlpha, newSigma, newLogPost, acceptStretch, acceptpCN) in zip(S_current, results):
+        for k, (newX, newAlpha, newSigma, newLogPost, RSGS_param, acceptBool) in zip(S_current, results):
             currentX[k,:] = newX
             currentAlpha[k] = newAlpha
             currentSigma[k] = newSigma
             currentLogPost[k] = newLogPost
-            num_accepts_AIES += int(acceptStretch)
-            num_accepts_PCN += int(acceptpCN)
-    if i%1000==0:
+            if RSGS_param == "AIES":
+                num_accepts_AIES += int(acceptBool)
+                num_proposals_AIES += 1
+            elif RSGS_param == "CS":
+                num_accepts_PCN += int(acceptBool)
+                num_proposals_pCN += 1
+            else:
+                raise ValueError("'RSGS_param' should be either 'AIES' or 'CS'")
+
+    if i%50000==0:
         print(f"Iteration {i}/{N}")
         # save 0th walker and average over walkers
         np.savetxt(f"{dir_name}/ensemble_sampler-walker0-paths_L{L}.txt", samples[:, 0, :])
@@ -185,8 +225,8 @@ print("Done")
 end_time = time.time()
 
 print(f"Running time {(end_time-start_time)/60:.2f}min")
-accept_rate_AIES = num_accepts_AIES / (N*L) * 100
-accept_rate_PCN = num_accepts_PCN / (N*L) * 100
+accept_rate_AIES = num_accepts_AIES / (num_proposals_AIES) * 100
+accept_rate_PCN = num_accepts_PCN / (num_proposals_pCN) * 100
 print(f"Acceptance rate for AIES: {accept_rate_AIES:.1f}%")
 print(f"Acceptance rate for pCN: {accept_rate_PCN:.1f}%")
 

@@ -8,9 +8,9 @@ Joint proposal for the initial condition and the wave speed u: pCN and Gaussian 
 """
 
 
-Nstandard = 300000
+Nstandard = 1000000
 
-thin_samples = 10
+thin_samples = 100
 assert Nstandard % thin_samples == 0
 N_saved = int(Nstandard/thin_samples)
 
@@ -57,5 +57,5 @@ print(f"Acceptance rate: {acceptance_rate:.1f}%")
 print("Done sampling.")
 # save samples
 print("Saving samples.")
-np.savetxt(f"outputs/advection/standard_IC_samples.txt", standardICsamples)
-np.savetxt(f"outputs/advection/standard_u_samples.txt", standarduSamples)
+np.savetxt(f"outputs/advection_sampler/pCN/standard_IC_samples.txt", standardICsamples)
+np.savetxt(f"outputs/advection_sampler/pCN/standard_u_samples.txt", standarduSamples)

@@ -62,3 +62,36 @@ def logLik(u, IC):
     log_lik = log_lik_advection(u=u, IC=IC, data_array=data_array,
                                 x_min=x_min, x_max=x_max, error_model='gaussian', loss_sd=loss_sd)
     return log_lik + log_prior_u(u)
+
+
+
+
+def logPriorIC(IC):
+    return - 0.5*np.linalg.multi_dot([IC.T, precision_mat, IC])
+
+def logPost(u, IC):
+    """
+    log-posterior for both u and IC
+    Input centered ICs
+    """
+    if not (0<u<1.4):
+        return -9999999999
+    log_lik = log_lik_advection(u=u, IC=IC+IC_prior_mean, data_array=data_array,
+                                x_min=x_min, x_max=x_max, error_model='gaussian', loss_sd=loss_sd)
+    return log_lik + log_prior_u(u) + logPriorIC(IC)
+
+def invG(u, a):
+    phi = 1/(2*(np.sqrt(a) - 1/np.sqrt(a)))
+    return (u/(2*phi) + 1/np.sqrt(a))**2
+
+def sampleG(a):
+    return invG(np.random.uniform(0,1), a)
+
+# KL transform:
+_, evects = np.linalg.eigh(cov_prior)
+
+def get_KL_weights(x):
+    return evects.T @ x
+
+def inverseKL(w):
+    return evects @ w
