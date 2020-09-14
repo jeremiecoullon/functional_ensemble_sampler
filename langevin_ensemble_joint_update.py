@@ -96,114 +96,109 @@ def ensemble_step(args):
 
 
 # ================
-num_cores = mp.cpu_count()
-pool = mp.Pool(num_cores)
+# num_cores = mp.cpu_count()
+# pool = mp.Pool(num_cores)
+
+def run_ensemble_sampler():
+    N_thin = int(N/thin_step)
+
+    samples = np.zeros((N_thin, 2, num_pt))
+    samplesAlpha = np.zeros((N_thin, 2))
+    samplesSigma = np.zeros((N_thin, 2))
+    logPostList = np.zeros((N_thin, 2))
+
+    currentAlpha = np.array([0+np.random.normal() for i in range(L)])
+    currentSigma = np.array([0+np.random.normal() for i in range(L)])
+    currentX = np.array([samplePrior() for e in range(L)])
+    currentLogPost = np.zeros(L)
+
+    for k in range(L):
+        currentLogPost[k] = log_post(currentX[k,:], currentAlpha[k], currentSigma[k])
+
+    logPostList[0, 0] = currentLogPost[0] # 0th walker
+    logPostList[0, 1] = np.mean(currentLogPost) # average over all walkers
+    num_accepts_joint = 0
+
+    # dir_name = f"outputs/langevin_sampler/sigma-3_alpha-8/ensemble_sampler/L_{L}-a_{a_prop}"
+    dir_name = f"outputs/langevin_sampler_sine4/sigma-4_alpha-12/ensemble_sampler/L_{L}-a_{a_prop}/joint_update"
+    Path(dir_name).mkdir(exist_ok=True)
+
+    start_time = time.time()
+    print(f"Running joint update ensemble sampler for {N} iterations. omega={omega}, M_trunc={M_trunc} and {L} walkers.\nProposal variance a={a_prop}\n")
+    for i in range(N):
+        mylist = list(range(L))
+        np.random.shuffle(mylist)
+        halfL = int(L / 2)
+        S1, S2 = mylist[:halfL], mylist[halfL:L]
+
+        Slist = [S1, S2]
+        for idxS in [0,1]:
+            S_current = Slist[idxS]
+            S_other = Slist[idxS-1]
+            S_arg_list = []
+            for k in S_current:
+                j0 = np.random.choice(S_other)
+                arg_list = [currentX[k,:], currentAlpha[k], currentSigma[k],
+                           currentX[j0,:], currentAlpha[j0], currentSigma[j0],
+                           M_trunc, a_prop, omega,
+                            currentLogPost[k]]
+                S_arg_list.append(arg_list)
+
+            results = pool.map(ensemble_step, S_arg_list)
+
+            for k, (newX, newAlpha, newSigma, newLogPost, acceptJoint) in zip(S_current, results):
+                currentX[k,:] = newX
+                currentAlpha[k] = newAlpha
+                currentSigma[k] = newSigma
+                currentLogPost[k] = newLogPost
+                num_accepts_joint += int(acceptJoint)
+        if i%50000==0:
+            print(f"Iteration {i}/{N}")
+            # save 0th walker and average over walkers
+            np.savetxt(f"{dir_name}/ensemble_sampler-walker0-paths_L{L}.txt", samples[:, 0, :])
+            np.savetxt(f"{dir_name}/ensemble_sampler-walker0-alpha_L{L}.txt", samplesAlpha[:, 0])
+            np.savetxt(f"{dir_name}/ensemble_sampler-walker0-sigma_L{L}.txt", samplesSigma[:, 0])
+
+            np.savetxt(f"{dir_name}/ensemble_sampler-average-paths_L{L}.txt", samples[:, 1, :])
+            np.savetxt(f"{dir_name}/ensemble_sampler-average-alpha_L{L}.txt", samplesAlpha[:, 1])
+            np.savetxt(f"{dir_name}/ensemble_sampler-average-sigma_L{L}.txt", samplesSigma[:, 1])
+        # only save every N_thin iterations
+        if i%thin_step==0:
+            i_thin = int(i/thin_step)
+            # save 0th walker
+            samples[i_thin, 0, :] = currentX[0, :]
+            logPostList[i_thin, 0] = currentLogPost[0]
+            samplesSigma[i_thin, 0] = currentSigma[0]
+            samplesAlpha[i_thin, 0] = currentAlpha[0]
+
+            # save average over walkers
+            samples[i_thin, 1, :] = np.mean(currentX, axis=0)
+            logPostList[i_thin, 1] = np.mean(currentLogPost)
+            samplesSigma[i_thin, 1] = np.mean(currentSigma)
+            samplesAlpha[i_thin, 1] = np.mean(currentAlpha)
+    print("Done")
+
+    end_time = time.time()
+
+    print(f"Running time {(end_time-start_time)/60:.2f}min")
+    accept_rate_joint = num_accepts_joint / (N*L) * 100
+    print(f"Acceptance rate: {accept_rate_joint:.1f}%")
 
 
-N_thin = int(N/thin_step)
+    # save 0th walker and average over walkers
+    np.savetxt(f"{dir_name}/ensemble_sampler-walker0-paths_L{L}.txt", samples[:, 0, :])
+    np.savetxt(f"{dir_name}/ensemble_sampler-walker0-alpha_L{L}.txt", samplesAlpha[:, 0])
+    np.savetxt(f"{dir_name}/ensemble_sampler-walker0-sigma_L{L}.txt", samplesSigma[:, 0])
 
-# initialise MCMC:
-# samples N_thin samples (ie: thin samples)
-# Save 2 MCMC chains: 1. one of the walkers and 2. the average over walkers
-samples = np.zeros((N_thin, 2, num_pt))
-samplesAlpha = np.zeros((N_thin, 2))
-samplesSigma = np.zeros((N_thin, 2))
-logPostList = np.zeros((N_thin, 2))
-
-
-
-currentAlpha = np.array([0+np.random.normal() for i in range(L)])
-currentSigma = np.array([0+np.random.normal() for i in range(L)])
-currentX = np.array([samplePrior() for e in range(L)])
-currentLogPost = np.zeros(L)
+    np.savetxt(f"{dir_name}/ensemble_sampler-average-paths_L{L}.txt", samples[:, 1, :])
+    np.savetxt(f"{dir_name}/ensemble_sampler-average-alpha_L{L}.txt", samplesAlpha[:, 1])
+    np.savetxt(f"{dir_name}/ensemble_sampler-average-sigma_L{L}.txt", samplesSigma[:, 1])
+    with open(f"{dir_name}/ensemble_sampler_info.txt", 'w') as f:
+        msg = f"""N = {N}\n\nthin_step={thin_step}\n\nL={L}\n\nomega={omega}\n\nM={M_trunc}, L={L}\n\nAcceptance rate: {accept_rate_joint:.1f}%"""
+        f.write(msg)
 
 
-for k in range(L):
-    currentLogPost[k] = log_post(currentX[k,:], currentAlpha[k], currentSigma[k])
-
-logPostList[0, 0] = currentLogPost[0] # 0th walker
-logPostList[0, 1] = np.mean(currentLogPost) # average over all walkers
-num_accepts_joint = 0
-
-
-
-# dir_name = f"outputs/langevin_sampler/sigma-3_alpha-8/ensemble_sampler/L_{L}-a_{a_prop}"
-dir_name = f"outputs/langevin_sampler/sigma-4_alpha-12/ensemble_sampler/L_{L}-a_{a_prop}/joint_update"
-Path(dir_name).mkdir(exist_ok=True)
-
-
-
-
-start_time = time.time()
-print(f"Running joint update ensemble sampler for {N} iterations. omega={omega}, M_trunc={M_trunc} and {L} walkers.\nProposal variance a={a_prop}\n")
-for i in range(N):
-    mylist = list(range(L))
-    np.random.shuffle(mylist)
-    halfL = int(L / 2)
-    S1, S2 = mylist[:halfL], mylist[halfL:L]
-
-    Slist = [S1, S2]
-    for idxS in [0,1]:
-        S_current = Slist[idxS]
-        S_other = Slist[idxS-1]
-        S_arg_list = []
-        for k in S_current:
-            j0 = np.random.choice(S_other)
-            arg_list = [currentX[k,:], currentAlpha[k], currentSigma[k],
-                       currentX[j0,:], currentAlpha[j0], currentSigma[j0],
-                       M_trunc, a_prop, omega,
-                        currentLogPost[k]]
-            S_arg_list.append(arg_list)
-
-        results = pool.map(ensemble_step, S_arg_list)
-
-        for k, (newX, newAlpha, newSigma, newLogPost, acceptJoint) in zip(S_current, results):
-            currentX[k,:] = newX
-            currentAlpha[k] = newAlpha
-            currentSigma[k] = newSigma
-            currentLogPost[k] = newLogPost
-            num_accepts_joint += int(acceptJoint)
-    if i%50000==0:
-        print(f"Iteration {i}/{N}")
-        # save 0th walker and average over walkers
-        np.savetxt(f"{dir_name}/ensemble_sampler-walker0-paths_L{L}.txt", samples[:, 0, :])
-        np.savetxt(f"{dir_name}/ensemble_sampler-walker0-alpha_L{L}.txt", samplesAlpha[:, 0])
-        np.savetxt(f"{dir_name}/ensemble_sampler-walker0-sigma_L{L}.txt", samplesSigma[:, 0])
-
-        np.savetxt(f"{dir_name}/ensemble_sampler-average-paths_L{L}.txt", samples[:, 1, :])
-        np.savetxt(f"{dir_name}/ensemble_sampler-average-alpha_L{L}.txt", samplesAlpha[:, 1])
-        np.savetxt(f"{dir_name}/ensemble_sampler-average-sigma_L{L}.txt", samplesSigma[:, 1])
-    # only save every N_thin iterations
-    if i%thin_step==0:
-        i_thin = int(i/thin_step)
-        # save 0th walker
-        samples[i_thin, 0, :] = currentX[0, :]
-        logPostList[i_thin, 0] = currentLogPost[0]
-        samplesSigma[i_thin, 0] = currentSigma[0]
-        samplesAlpha[i_thin, 0] = currentAlpha[0]
-
-        # save average over walkers
-        samples[i_thin, 1, :] = np.mean(currentX, axis=0)
-        logPostList[i_thin, 1] = np.mean(currentLogPost)
-        samplesSigma[i_thin, 1] = np.mean(currentSigma)
-        samplesAlpha[i_thin, 1] = np.mean(currentAlpha)
-print("Done")
-
-end_time = time.time()
-
-print(f"Running time {(end_time-start_time)/60:.2f}min")
-accept_rate_joint = num_accepts_joint / (N*L) * 100
-print(f"Acceptance rate: {accept_rate_joint:.1f}%")
-
-
-# save 0th walker and average over walkers
-np.savetxt(f"{dir_name}/ensemble_sampler-walker0-paths_L{L}.txt", samples[:, 0, :])
-np.savetxt(f"{dir_name}/ensemble_sampler-walker0-alpha_L{L}.txt", samplesAlpha[:, 0])
-np.savetxt(f"{dir_name}/ensemble_sampler-walker0-sigma_L{L}.txt", samplesSigma[:, 0])
-
-np.savetxt(f"{dir_name}/ensemble_sampler-average-paths_L{L}.txt", samples[:, 1, :])
-np.savetxt(f"{dir_name}/ensemble_sampler-average-alpha_L{L}.txt", samplesAlpha[:, 1])
-np.savetxt(f"{dir_name}/ensemble_sampler-average-sigma_L{L}.txt", samplesSigma[:, 1])
-with open(f"{dir_name}/ensemble_sampler_info.txt", 'w') as f:
-    msg = f"""N = {N}\n\nthin_step={thin_step}\n\nL={L}\n\nomega={omega}\n\nM={M_trunc}, L={L}\n\nAcceptance rate: {accept_rate_joint:.1f}%"""
-    f.write(msg)
+if __name__ == '__main__':
+    num_cores = mp.cpu_count()
+    pool = mp.Pool(num_cores)
+    run_ensemble_sampler()

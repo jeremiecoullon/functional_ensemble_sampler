@@ -10,13 +10,12 @@ from langevin_functions import true_path, le_obs, array_obs_points, log_post, si
 N = 5000000
 thin_step = 200
 M_trunc = 5
-# omega = 0.15
-omega = 0.25
+omega = 0.15
 
 # ===============
 # fit covariance to pre-run
 print("Loading prerun and fitting proposal covariance...")
-dir_name_prerun = "outputs/langevin_sampler/sigma-4_alpha-12/pCN_sampler/"
+dir_name_prerun = "outputs/langevin_sampler_sine4/sigma-4_alpha-12/pCN_sampler/"
 
 
 N_obs_adapt = 5000 # number of observations in prerun to fit mean and covariance. Note that the prerun is thinned by 100
@@ -72,7 +71,7 @@ num_accepts = 0
 array_accepts = -1*np.ones(N-1)
 
 # dir_name = f"outputs/langevin_sampler/sigma-3_alpha-8/hybrid_sampler"
-dir_name = f"outputs/langevin_sampler/sigma-4_alpha-12/hybrid_sampler"
+dir_name = f"outputs/langevin_sampler_sine4/sigma-4_alpha-12/hybrid_sampler"
 Path(dir_name).mkdir(exist_ok=True)
 
 start_time = time.time()

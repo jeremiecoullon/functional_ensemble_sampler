@@ -4,7 +4,7 @@ from .advectionequation import log_lik_advection, gen_advection_data
 prior_mean = 100
 l, sigma_prior= 1, 130
 # Likelihood noise
-loss_sd = 0.5
+loss_sd = 0.2
 
 def cov_exp(x,y):
     return sigma_prior*np.exp(-0.5*(1/l)*(x-y)**2)
@@ -24,23 +24,27 @@ def samplePrior():
 
 # ===============
 # generate true_IC
-true_IC = samplePrior() + IC_prior_mean
+# true_IC = samplePrior() + IC_prior_mean
 
 # Use saved true_IC & data array
 true_IC = np.genfromtxt("data/thesis_Advection_true_IC.csv")
-data_array = np.genfromtxt("data/advection_data_array_sigma05.csv")
+# data_array = np.genfromtxt("data/advection_data_array_sigma05.csv")
+data_array = np.genfromtxt("data/advection_data_array_sigma02_t_1-2.csv") # t in (1, 2)
 
 # Generate advection data
 true_u = 0.5
 
-num_data = 6
+# num_data = 6
 # list_locations = [(k,v) for k, v in zip(np.random.uniform(2, 10, size=num_data), np.random.uniform(0,2, size=num_data))]
-list_locations = [(6.229025183588771, 1.046262032840266),
- (3.9796996427900364, 1.8577904239602372),
- (9.10480397079595, 1.249327847984541),
- (9.971123877107935, 1.9549391760550934),
- (7.098389475198764, 1.1756014323922388),
- (8.53772852322852, 0.03540495948154798)]
+# list_locations = [(6.229025183588771, 1.046262032840266),
+#  (3.9796996427900364, 1.8577904239602372),
+#  (9.10480397079595, 1.249327847984541),
+#  (9.971123877107935, 1.9549391760550934),
+#  (7.098389475198764, 1.1756014323922388),
+#  (8.53772852322852, 0.03540495948154798)]
+
+# 9 equally spaced detectors
+list_locations = [(x,t) for x in np.linspace(2, 10, 3) for t in np.linspace(1, 2, 3)]
 
 
 def uniform_log_prob(theta, lower, upper):
@@ -58,7 +62,7 @@ def log_prior_u(u):
 def logLik(u, IC):
     "log-posterior for both u and IC"
     if not (0<u<1.4):
-        return -9999999999
+        return -np.inf
     log_lik = log_lik_advection(u=u, IC=IC, data_array=data_array,
                                 x_min=x_min, x_max=x_max, error_model='gaussian', loss_sd=loss_sd)
     return log_lik + log_prior_u(u)

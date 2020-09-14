@@ -29,7 +29,7 @@ def solve_advection(u, IC, x, t, x_min=0, x_max=10):
     # x point in IC corresponding to solution
     IC_x = x - u*t
     if not x_min<=IC_x<=x_max:
-        raise ValueError("IC is within [{0}, {1}]. Requested solution is at x = {2:.1f}".format(x_min, x_max, IC_x))
+        raise ValueError(f"IC is within [{x_min}, {x_max}]. Requested solution is at x = {IC_x:.1f}")
     # find index of IC that is the closest point inkk space to the required point
     idx_IC = np.abs(np.linspace(x_min, x_max, len(IC)) - IC_x).argmin()
     den, flow = IC[idx_IC], IC[idx_IC]*u

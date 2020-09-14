@@ -6,15 +6,19 @@ from BM_prior import samplePrior, x_range, dt, num_pt, get_KL_weights, inverseKL
 
 # true_path = np.sin(x_range)
 # True path generated with alpha=5, sigma=0.5
-true_path = np.genfromtxt("data/langevin_problem/langevin_true_Xt.txt")
+# true_path = np.genfromtxt("data/langevin_problem/langevin_true_Xt.txt")
 
-array_obs_points = np.arange(0.5, 10.5, 2)
+true_path = np.sin(4*x_range)
+array_obs_points = np.arange(1, 10.5, 2)
+
+# array_obs_points = np.arange(0.5, 10.5, 2)
 obs_time_points = list(map(int, array_obs_points/dt - 1))
-sigma_obs = 0.2
+sigma_obs = 0.3
 
 # le_obs = true_path[obs_time_points] + np.random.normal(loc=0, scale=sigma_obs, size=len(obs_time_points))
 # np.savetxt("bimodal_observations.txt", le_obs)
-le_obs = np.genfromtxt("data/langevin_problem/bimodal_observations.txt")
+# le_obs = np.genfromtxt("data/langevin_problem/bimodal_observations.txt")
+le_obs = np.genfromtxt("data/langevin_problem/bimodal_observations_sin4.txt")
 
 
 def loglikelihood(W, alpha, sigma):
