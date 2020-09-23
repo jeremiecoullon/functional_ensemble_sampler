@@ -12,3 +12,6 @@ drafts/*
 *.so
 data/
 *.png
+send_langevin_server.sh
+job_langevin_pcn.com
+*.com

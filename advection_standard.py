@@ -1,6 +1,8 @@
+import time
+import os
 import numpy as np
 from advection_sampler.advection_posterior import samplePrior, logLik, IC_prior_mean, num_pt, true_IC, log_prior_u
-import time
+
 
 """
 Sampler for the advection equation:
@@ -9,10 +11,12 @@ Joint proposal for the initial condition and the wave speed u: pCN and Gaussian 
 
 
 # Nstandard = 3000000
-Nstandard = 20000000
-thin_samples = 200
+Nstandard = 500000000
+thin_samples = 5000
 
-dir_name = "outputs/advection_sampler/loss_sd-02-t_1_2"
+global_storage_path = os.environ['global_storage']
+
+dir_name = f"{global_storage_path}/outputs/advection_sampler/loss_sd-02-t_1_2"
 
 
 assert Nstandard % thin_samples == 0
@@ -67,8 +71,12 @@ for i in range(1, Nstandard):
         standardICsamples[i_save, :] = currentIC
         standarduSamples[i_save, :] = currentU
         standardlogPostList[i_save] = currentLogPost
-    if i%50000==0:
+    if i%5000000==0:
         print(f"Iteration {i}/{Nstandard}")
+        print("Saving samples.")
+        np.savetxt(f"{dir_name}/pCN/standard_IC_samples.txt", standardICsamples)
+        np.savetxt(f"{dir_name}/pCN/standard_u_samples.txt", standarduSamples)
+        print("Done.")
 
 acceptance_rate = num_accepts / Nstandard * 100
 print(f"Acceptance rate: {acceptance_rate:.1f}%")

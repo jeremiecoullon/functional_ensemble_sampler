@@ -3,6 +3,7 @@ import numpy as np
 import multiprocessing as mp
 from pathlib import Path
 import time
+import os
 
 from forward_models import solve_Langevin
 from BM_prior import samplePrior, x_range, dt, num_pt, get_KL_weights, inverseKL, sampleG, evects, evals, logPriorBM
@@ -12,12 +13,12 @@ from langevin_functions import true_path, le_obs, array_obs_points, log_post, si
 
 # ============
 # MCMC parameters
-N = 3000000
-thin_step = 100
+N = 20000000
+thin_step = 200
 
 omega = 0.15
 M_trunc = 5
-L = 8
+L = 100
 a_prop = 2
 # ============
 
@@ -120,7 +121,11 @@ def run_ensemble_sampler():
     num_accepts_joint = 0
 
     # dir_name = f"outputs/langevin_sampler/sigma-3_alpha-8/ensemble_sampler/L_{L}-a_{a_prop}"
-    dir_name = f"outputs/langevin_sampler_sine4/sigma-4_alpha-12/ensemble_sampler/L_{L}-a_{a_prop}/joint_update"
+    if 'global_storage' in os.environ:
+        global_storage_path = os.environ['global_storage'] + "/"
+    else:
+        global_storage_path = ""
+    dir_name = f"{global_storage_path}outputs/langevin_sampler_sine4/sigma-4_alpha-12/ensemble_sampler/L_{L}-a_{a_prop}/joint_update"
     Path(dir_name).mkdir(exist_ok=True)
 
     start_time = time.time()
@@ -152,7 +157,7 @@ def run_ensemble_sampler():
                 currentSigma[k] = newSigma
                 currentLogPost[k] = newLogPost
                 num_accepts_joint += int(acceptJoint)
-        if i%50000==0:
+        if i%1000000==0:
             print(f"Iteration {i}/{N}")
             # save 0th walker and average over walkers
             np.savetxt(f"{dir_name}/ensemble_sampler-walker0-paths_L{L}.txt", samples[:, 0, :])
@@ -200,5 +205,6 @@ def run_ensemble_sampler():
 
 if __name__ == '__main__':
     num_cores = mp.cpu_count()
+    print(f"Num cores={num_cores}")
     pool = mp.Pool(num_cores)
     run_ensemble_sampler()

@@ -1,4 +1,5 @@
 
+import os
 import numpy as np
 from pathlib import Path
 import time
@@ -17,14 +18,17 @@ cov_parm_pCN = 0.05*np.array([[1.55795522, 0.7688323 ],
 # V2: prior
 # cov_parm_pCN = 0.05*np.array([[1.17901601, 0.52205976],
 #                            [0.52205976, 0.55162661]])
-N_pCN = 5000000
+N_pCN = 30000000
 omega = 0.08
 
-thin_step = 100
+thin_step = 300
 
 
-# dir_name = f"outputs/langevin_sampler/sigma-3_alpha-8/pCN_sampler"
-dir_name = f"outputs/langevin_sampler_sine4/sigma-4_alpha-12/pCN_sampler"
+if 'global_storage' in os.environ:
+    global_storage_path = os.environ['global_storage'] + "/"
+else:
+    global_storage_path = ""
+dir_name = f"{global_storage_path}outputs/langevin_sampler_sine4/sigma-4_alpha-12/pCN_sampler"
 Path(dir_name).mkdir(exist_ok=True)
 
 N_thin = int(N_pCN/thin_step)
@@ -62,7 +66,7 @@ for i in range(1, N_pCN):
         samplespCN[i_thin] = currentSamplepCN
         samples_alphapCN[i_thin] = current_alphapCN
         samples_sigmapCN[i_thin] = current_sigmapCN
-    if i%100000==0:
+    if i%2000000==0:
         print(f"Iteration {i}/{N_pCN}")
         np.savetxt(f"{dir_name}/pCN_sampler-paths.txt", samplespCN[:, :])
         np.savetxt(f"{dir_name}/pCN_sampler-alpha.txt", samples_alphapCN[:])

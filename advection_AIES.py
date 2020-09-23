@@ -2,6 +2,7 @@
 import numpy as np
 import time
 from pathlib import Path
+import os
 
 from advection_sampler.advection_posterior import samplePrior, num_pt, evects, IC_prior_mean, true_IC
 from advection_sampler.advection_posterior import logPriorIC, logPost, invG, sampleG, get_KL_weights, inverseKL
@@ -10,12 +11,18 @@ from advection_sampler.advection_posterior import logPriorIC, logPost, invG, sam
 # Sampler
 
 L = 100 # number of walkers
-N = 1000000 # number of iterations
+N = 20000000 # number of iterations
 # N = 2000 # number of iterations
 
-# ============
+# =====================
+# # TEST SAMPLER: SAMPLE FROM THE PRIOR
+# omega = 1
+# N = 100000
+# thin_step = 2
+# L = 8
+# # =====================
 
-thin_samples = 100
+thin_samples = 200
 assert N % thin_samples == 0
 N_saved = int(N/thin_samples)
 
@@ -24,8 +31,12 @@ N_saved = int(N/thin_samples)
 currentX = np.array([np.sqrt(1-0.9**2)*(true_IC-IC_prior_mean) + 0.9*samplePrior() for e in range(L)])
 currentU = np.array([np.random.uniform(0.4,0.6) for e in range(L)])
 
-samples = np.zeros((N_saved, L, num_pt))
-samplesU = np.zeros((N_saved, L))
+# samples = np.zeros((N_saved, L, num_pt))
+# samplesU = np.zeros((N_saved, L))
+
+# Save only 2 chains. idx 0 is walker 0. idx 1 is the average over all walkers
+samples = np.zeros((N_saved, 2, num_pt))
+samplesU = np.zeros((N_saved, 2))
 
 
 currentLogPost = np.zeros(L)
@@ -33,8 +44,16 @@ logPostList = np.zeros((N_saved, L))
 for k in range(L):
     currentLogPost[k] = logPost(u=currentU[k], IC=currentX[k,:])
     logPostList[0,k] = currentLogPost[k]
-    samples[0,k,:] = currentX[k]
-    samplesU[0,k] = currentU[k]
+    # samples[0,k,:] = currentX[k]
+    # samplesU[0,k] = currentU[k]
+
+# walker 0
+samples[0, 0,:] = currentX[0]
+samplesU[0, 0] = currentU[0]
+
+# average over all walkers
+samples[0, 1,:] = np.mean(currentX[:], axis=0)
+samplesU[0, 1] = np.mean(currentU)
 
 
 a_prop = 2
@@ -48,10 +67,13 @@ def run_MCMC(M_trunc, omega):
     # Path(dir_name_base).mkdir(exist_ok=True)
     # dir_name = f"outputs/advection_sampler/ensemble_sampler/L_{L}/M_{M_trunc}"
     # Path(dir_name).mkdir(exist_ok=True)
-
-    dir_name_base = f"outputs/advection_sampler/loss_sd-02-t_1_2/ensemble_sampler/L_{L}"
+    if 'global_storage' in os.environ:
+        global_storage_path = os.environ['global_storage'] + "/"
+    else:
+        global_storage_path = ""
+    dir_name_base = f"{global_storage_path}outputs/advection_sampler/loss_sd-02-t_1_2/ensemble_sampler/L_{L}"
     Path(dir_name_base).mkdir(exist_ok=True)
-    dir_name = f"outputs/advection_sampler/loss_sd-02-t_1_2/ensemble_sampler/L_{L}/M_{M_trunc}"
+    dir_name = f"{global_storage_path}outputs/advection_sampler/loss_sd-02-t_1_2/ensemble_sampler/L_{L}/M_{M_trunc}"
     Path(dir_name).mkdir(exist_ok=True)
 
     num_acceptsPCN = 0
@@ -91,7 +113,7 @@ def run_MCMC(M_trunc, omega):
                     logPost_prop = logPost(u=uProp, IC=Xprop)
                 elif M_trunc==0:
                     Z = sampleG(a_prop)
-                    uProp = currentU[k]*(1-Z) + Z*currentU[j0]
+                    uProp = currentU[j0]*(1-Z) + Z*currentU[k]
                     Xprop = currentX[k,:]
                     logPost_prop = logPost(u=uProp, IC=Xprop)
                 else:
@@ -119,16 +141,30 @@ def run_MCMC(M_trunc, omega):
         # update chain
         if i%thin_samples == 0:
             i_save = int(i/thin_samples)
-            samples[i_save,:,:] = currentX
-            samplesU[i_save,:] = currentU
+            # samples[i_save,:,:] = currentX
+            # samplesU[i_save,:] = currentU
+
+            # walker 0
+            samples[i_save,0,:] = currentX[0,:]
+            samplesU[i_save,0] = currentU[0]
+            # average over walkers:
+            samples[i_save,1,:] = np.mean(currentX[:,:], axis=0)
+            samplesU[i_save,1] = np.mean(currentU)
+
             logPostList[i_save, :] = currentLogPost[:]
-        if i%10000 == 0:
+        if i%1000000 == 0:
             print(f"Iteration {i}/{N}")
-            np.savetxt(f"{dir_name}/IC_samples-L-{L}.txt", np.mean(samples, axis=1))
-            np.savetxt(f"{dir_name}/u_samples-L-{L}.txt", np.mean(samplesU, axis=1))
+            np.savetxt(f"{dir_name}/IC_samples-L-{L}.txt", samples[:,1,:])
+            np.savetxt(f"{dir_name}/u_samples-L-{L}.txt", samplesU[:,1])
 
             np.savetxt(f"{dir_name}/IC_samples-L-{L}_walker0.txt", samples[:,0, :])
             np.savetxt(f"{dir_name}/u_samples-L-{L}_walker0.txt", samplesU[:,0])
+
+            # np.savetxt(f"{dir_name}/IC_samples-L-{L}.txt", np.mean(samples, axis=1))
+            # np.savetxt(f"{dir_name}/u_samples-L-{L}.txt", np.mean(samplesU, axis=1))
+            #
+            # np.savetxt(f"{dir_name}/IC_samples-L-{L}_walker0.txt", samples[:,0, :])
+            # np.savetxt(f"{dir_name}/u_samples-L-{L}_walker0.txt", samplesU[:,0])
 
 
     print("Done sampling.")
@@ -139,11 +175,16 @@ def run_MCMC(M_trunc, omega):
     accept_info = f"N={N}\nthin_samples={thin_samples}\nomega={omega}\nL={L}\n\nAcceptancte rates:\npCN: {acceptance_ratepCN:.1f}%\nensemble: {acceptance_rateAIES:.1f}%"
     # save samples
     print("Saving samples.")
-    np.savetxt(f"{dir_name}/IC_samples-L-{L}.txt", np.mean(samples, axis=1))
-    np.savetxt(f"{dir_name}/u_samples-L-{L}.txt", np.mean(samplesU, axis=1))
+    np.savetxt(f"{dir_name}/IC_samples-L-{L}.txt", samples[:,1,:])
+    np.savetxt(f"{dir_name}/u_samples-L-{L}.txt", samplesU[:,1])
 
     np.savetxt(f"{dir_name}/IC_samples-L-{L}_walker0.txt", samples[:,0, :])
     np.savetxt(f"{dir_name}/u_samples-L-{L}_walker0.txt", samplesU[:,0])
+    # np.savetxt(f"{dir_name}/IC_samples-L-{L}.txt", np.mean(samples, axis=1))
+    # np.savetxt(f"{dir_name}/u_samples-L-{L}.txt", np.mean(samplesU, axis=1))
+    #
+    # np.savetxt(f"{dir_name}/IC_samples-L-{L}_walker0.txt", samples[:,0, :])
+    # np.savetxt(f"{dir_name}/u_samples-L-{L}_walker0.txt", samplesU[:,0])
 
     with open(f"{dir_name}/ensemble_info-L-{L}.txt", "w") as f:
         f.write(accept_info)

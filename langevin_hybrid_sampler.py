@@ -2,39 +2,43 @@
 import numpy as np
 from pathlib import Path
 import time
+import os
 
 from forward_models import solve_Langevin
 from BM_prior import samplePrior, x_range, dt, num_pt, get_KL_weights, inverseKL, evects, evals, logPriorBM
 from langevin_functions import true_path, le_obs, array_obs_points, log_post, sigma_obs, update_mean_cov
 
-N = 5000000
-thin_step = 200
+N = 30000000
+thin_step = 300
 M_trunc = 5
 omega = 0.15
 
 # ===============
 # fit covariance to pre-run
 print("Loading prerun and fitting proposal covariance...")
-dir_name_prerun = "outputs/langevin_sampler_sine4/sigma-4_alpha-12/pCN_sampler/"
-
-
+# dir_name_prerun = "outputs/langevin_sampler_sine4/sigma-4_alpha-12/pCN_sampler/"
+#
+#
 N_obs_adapt = 5000 # number of observations in prerun to fit mean and covariance. Note that the prerun is thinned by 100
-samples_pCN_prerun = np.genfromtxt(f"{dir_name_prerun}/pCN_sampler-paths.txt")[:N_obs_adapt, :]
-samples_alpha_pCN_prerun = np.genfromtxt(f"{dir_name_prerun}/pCN_sampler-alpha.txt")[:N_obs_adapt]
-samples_sigma_pCN_prerun = np.genfromtxt(f"{dir_name_prerun}/pCN_sampler-sigma.txt")[:N_obs_adapt]
-
-# Fit proposal cov to prerun
-weights_samples_lowdim = np.array([get_KL_weights(e)[-M_trunc:] for e in samples_pCN_prerun[:]])
-parm_array = np.array([samples_alpha_pCN_prerun[:], samples_sigma_pCN_prerun[:]])
-parm_and_weights = np.concatenate([parm_array, weights_samples_lowdim.T])
-# Fit proposal covariance for alpha and sigma
-emp_cov = np.cov(parm_and_weights)
+# samples_pCN_prerun = np.genfromtxt(f"{dir_name_prerun}/pCN_sampler-paths.txt")[:N_obs_adapt, :]
+# samples_alpha_pCN_prerun = np.genfromtxt(f"{dir_name_prerun}/pCN_sampler-alpha.txt")[:N_obs_adapt]
+# samples_sigma_pCN_prerun = np.genfromtxt(f"{dir_name_prerun}/pCN_sampler-sigma.txt")[:N_obs_adapt]
+#
+# # Fit proposal cov to prerun
+# weights_samples_lowdim = np.array([get_KL_weights(e)[-M_trunc:] for e in samples_pCN_prerun[:]])
+# parm_array = np.array([samples_alpha_pCN_prerun[:], samples_sigma_pCN_prerun[:]])
+# parm_and_weights = np.concatenate([parm_array, weights_samples_lowdim.T])
+# # Fit proposal covariance for alpha and sigma
+# emp_cov = np.cov(parm_and_weights)
+emp_cov = np.genfromtxt("cov_langevin_hybrid.txt")
 print("Done fitting proposal covariance.")
 # ===============
 
 delta_cov = 1e-10
 cov_parm_Hybrid = delta_cov*np.eye(M_trunc+2) + emp_cov
-rec_mean = np.mean(parm_and_weights, axis=1)
+# rec_mean = np.mean(parm_and_weights, axis=1)
+rec_mean = np.genfromtxt("rec_mean_langevin_hybrid.txt")
+
 
 
 # Matrices to project on finite basis and CS:
@@ -70,8 +74,12 @@ num_accepts = 0
 
 array_accepts = -1*np.ones(N-1)
 
+if 'global_storage' in os.environ:
+    global_storage_path = os.environ['global_storage'] + "/"
+else:
+    global_storage_path = ""
 # dir_name = f"outputs/langevin_sampler/sigma-3_alpha-8/hybrid_sampler"
-dir_name = f"outputs/langevin_sampler_sine4/sigma-4_alpha-12/hybrid_sampler"
+dir_name = f"{global_storage_path}outputs/langevin_sampler_sine4/sigma-4_alpha-12/hybrid_sampler"
 Path(dir_name).mkdir(exist_ok=True)
 
 start_time = time.time()
@@ -115,7 +123,7 @@ for i in range(1, N):
         samples_sigmaHybrid[i_thin] = current_sigmaHybrid
         # alpha_variance_array[i_thin] = cov_parm_Hybrid[0,0] - delta_cov
         cov_diag_array[i_thin,:] = np.diag(cov_parm_Hybrid) - np.ones(M_trunc+2)*delta_cov
-    if i%50000==0:
+    if i%2000000==0:
         print(f"Iteration {i}/{N}")
         np.savetxt(f"{dir_name}/hybrid_sampler-paths.txt", samplesHybrid[:, :])
         np.savetxt(f"{dir_name}/hybrid_sampler-alpha.txt", samples_alphaHybrid[:])
