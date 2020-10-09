@@ -122,7 +122,7 @@ def run_ensemble_sampler():
     else:
         global_storage_path = ""
     dir_name = f"{global_storage_path}outputs/langevin_sampler_sine4/sigma-4_alpha-12/ensemble_sampler/L_{L}-a_{a_prop}/joint_update"
-    Path(f"{global_storage_path}outputs/langevin_sampler_sine4/sigma-4_alpha-12/ensemble_sampler/L_{L}-a_{a_prop}).mkdir(exist_ok=True)
+    Path(f"{global_storage_path}outputs/langevin_sampler_sine4/sigma-4_alpha-12/ensemble_sampler/L_{L}-a_{a_prop}").mkdir(exist_ok=True)
     Path(dir_name).mkdir(exist_ok=True)
 
     start_time = time.time()
