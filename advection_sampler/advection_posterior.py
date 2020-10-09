@@ -33,15 +33,6 @@ data_array = np.genfromtxt("data/advection_data_array_sigma02_t_1-2.csv") # t in
 # Generate advection data
 true_u = 0.5
 
-# num_data = 6
-# list_locations = [(k,v) for k, v in zip(np.random.uniform(2, 10, size=num_data), np.random.uniform(0,2, size=num_data))]
-# list_locations = [(6.229025183588771, 1.046262032840266),
-#  (3.9796996427900364, 1.8577904239602372),
-#  (9.10480397079595, 1.249327847984541),
-#  (9.971123877107935, 1.9549391760550934),
-#  (7.098389475198764, 1.1756014323922388),
-#  (8.53772852322852, 0.03540495948154798)]
-
 # 9 equally spaced detectors
 list_locations = [(x,t) for x in np.linspace(2, 10, 3) for t in np.linspace(1, 2, 3)]
 

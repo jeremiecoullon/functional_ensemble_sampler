@@ -11,13 +11,9 @@ from langevin_functions import true_path, le_obs, array_obs_points, log_post, si
 
 # Proposal covariance fit to a prerun of 500K. for alpha~Exp(12), sigma~Exp(4)
 
-# sin*4
 cov_parm_pCN = 0.05*np.array([[1.55795522, 0.7688323 ],
                        [0.7688323 , 0.56861249]])
 
-# V2: prior
-# cov_parm_pCN = 0.05*np.array([[1.17901601, 0.52205976],
-#                            [0.52205976, 0.55162661]])
 N_pCN = 300#00000
 omega = 0.08
 

@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
+from matplotlib.lines import Line2D
 import seaborn as sns
 sns.set_style("darkgrid")
 import numpy as np
@@ -11,25 +12,22 @@ from advection_sampler.advection_posterior import logLik, samplePrior, IC_prior_
 conditional_dict = {}
 logpostlist_dict = {}
 
-Nconditional = 2000
+Nconditional = 50000
 uval_list = [0.4,0.5,0.6]
 for uval in uval_list:
     standardICsamples = np.zeros((Nconditional, num_pt))
     standarduSamples = np.zeros((Nconditional, 1))
-    currentIC = samplePrior() + IC_prior_mean
+    currentIC = true_IC
     currentU = uval
     currentLogPost = logLik(u=currentU, IC=currentIC)
     standardlogPostList = np.zeros(Nconditional)
     standardlogPostList[0] = currentLogPost
     num_accepts = 0
 
-    omega = 0.2
-    # u_propSd = 0.0005
-    u_propSd = 0.00003
+    omega = 0.04
 
     for i in range(Nconditional):
         ICProp = np.sqrt(1-omega**2)*(currentIC-IC_prior_mean) + omega*samplePrior() + IC_prior_mean
-    #     uProp = currentU + np.random.normal(0, np.sqrt(u_propSd))
         uProp = currentU # keep u fixed
         proposed_logPost = logLik(u=uProp, IC=ICProp)
         log_alpha = proposed_logPost - currentLogPost
@@ -51,22 +49,30 @@ for uval in uval_list:
     logpostlist_dict[uval] = deepcopy(standardlogPostList)
 
 
-
+rcParams.update({'font.size': 17})
 burnin = 100
-thin = 10
+thin = 200
+
 
 plt.figure(figsize=(12, 6))
 
 for i in range(burnin, Nconditional, thin):
-    plt.plot(np.linspace(x_min,x_max, num_pt), conditional_dict[0.4][i,:], alpha=0.1, c='b')
+    plt.plot(np.linspace(x_min,x_max, num_pt), conditional_dict[0.4][i,:], alpha=0.1, c='#CC79A7')
 for i in range(burnin, Nconditional, thin):
-    plt.plot(np.linspace(x_min,x_max, num_pt), conditional_dict[0.5][i,:], alpha=0.1, c='g')
+    plt.plot(np.linspace(x_min,x_max, num_pt), conditional_dict[0.5][i,:], alpha=0.1, c='#56B4E9')
 for i in range(burnin, Nconditional, thin):
-    plt.plot(np.linspace(x_min,x_max, num_pt), conditional_dict[0.6][i,:], alpha=0.1, c='cyan')
-plt.plot(np.linspace(x_min,x_max, num_pt), true_IC, c='r', label="true IC")
-plt.legend()
-plt.title(f"conditional IC samples. c = {uval_list}", size=20)
+    plt.plot(np.linspace(x_min,x_max, num_pt), conditional_dict[0.6][i,:], alpha=0.1, c='#009E73')
+plt.plot(np.linspace(x_min,x_max, num_pt), true_IC, c='#D55E00', label="true IC", lw=4)
 
-# plt.savefig("images/paper_images/advection_conditional.png")
+custom_lines = [Line2D([0], [0], color="#CC79A7", lw=4),
+                Line2D([0], [0], color="#56B4E9", lw=4),
+                Line2D([0], [0], color="#009E73", lw=4),
+               Line2D([0], [0], color="#D55E00", lw=4)]
+plt.legend(custom_lines, ['$c=0.4$', '$c=0.5$', '$c=0.6$', 'true IC'], loc="upper right")
+
+plt.title(r"conditional $\rho_0|c$ samples", size=20)
+plt.xlabel("x", size=28)
+plt.ylabel(r"$\rho$", size=28, rotation=0)
+# plt.savefig("images/paper_images/advection_conditional_c.png")
 
 plt.show()
