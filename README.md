@@ -2,7 +2,7 @@
 
 Setup:
 
-- Requires Python 3.6+ (uses f-strings and the `@` operator)
+- Requires Python 3.6+ (uses f-strings and the `@` operator). The results in the paper use Python 3.8.5.
 - Install packages in `requirements.txt`
 - To compile: `gcc -fPIC -shared -o euler_solver.so src/euler_solver.c`
 
