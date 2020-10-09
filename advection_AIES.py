@@ -160,12 +160,6 @@ def run_MCMC(M_trunc, omega):
             np.savetxt(f"{dir_name}/IC_samples-L-{L}_walker0.txt", samples[:,0, :])
             np.savetxt(f"{dir_name}/u_samples-L-{L}_walker0.txt", samplesU[:,0])
 
-            # np.savetxt(f"{dir_name}/IC_samples-L-{L}.txt", np.mean(samples, axis=1))
-            # np.savetxt(f"{dir_name}/u_samples-L-{L}.txt", np.mean(samplesU, axis=1))
-            #
-            # np.savetxt(f"{dir_name}/IC_samples-L-{L}_walker0.txt", samples[:,0, :])
-            # np.savetxt(f"{dir_name}/u_samples-L-{L}_walker0.txt", samplesU[:,0])
-
 
     print("Done sampling.")
     end = time.time()
@@ -180,24 +174,18 @@ def run_MCMC(M_trunc, omega):
 
     np.savetxt(f"{dir_name}/IC_samples-L-{L}_walker0.txt", samples[:,0, :])
     np.savetxt(f"{dir_name}/u_samples-L-{L}_walker0.txt", samplesU[:,0])
-    # np.savetxt(f"{dir_name}/IC_samples-L-{L}.txt", np.mean(samples, axis=1))
-    # np.savetxt(f"{dir_name}/u_samples-L-{L}.txt", np.mean(samplesU, axis=1))
-    #
-    # np.savetxt(f"{dir_name}/IC_samples-L-{L}_walker0.txt", samples[:,0, :])
-    # np.savetxt(f"{dir_name}/u_samples-L-{L}_walker0.txt", samplesU[:,0])
 
     with open(f"{dir_name}/ensemble_info-L-{L}.txt", "w") as f:
         f.write(accept_info)
 
     return samples, samplesU, acceptance_ratepCN, acceptance_rateAIES
 
-# Tuned parameters
+# Tuning parameters
 # M=20, omega=1
 # M=10, omega=0.6
 # M=5, omega=0.15
 # M=1, omega=0.05
 # M=0, omega=0.04
-
 
 samples, samplesU, acceptance_ratepCN, acceptance_rateAIES = run_MCMC(M_trunc=0, omega=0.04)
 
