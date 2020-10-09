@@ -68,20 +68,20 @@ for i in range(1, N_pCN):
         samples_sigmapCN[i_thin] = current_sigmapCN
     if i%2000000==0:
         print(f"Iteration {i}/{N_pCN}")
-        # np.savetxt(f"{dir_name}/pCN_sampler-paths.txt", samplespCN[:, :])
-        # np.savetxt(f"{dir_name}/pCN_sampler-alpha.txt", samples_alphapCN[:])
-        # np.savetxt(f"{dir_name}/pCN_sampler-sigma.txt", samples_sigmapCN[:])
+        np.savetxt(f"{dir_name}/pCN_sampler-paths.txt", samplespCN[:, :])
+        np.savetxt(f"{dir_name}/pCN_sampler-alpha.txt", samples_alphapCN[:])
+        np.savetxt(f"{dir_name}/pCN_sampler-sigma.txt", samples_sigmapCN[:])
 
 accept_rate = num_accepts / N_pCN * 100
 print("Done.")
 print(f"Acceptance rate: {accept_rate:.2f}%")
 
-# np.savetxt(f"{dir_name}/pCN_sampler-paths.txt", samplespCN[:, :])
-# np.savetxt(f"{dir_name}/pCN_sampler-alpha.txt", samples_alphapCN[:])
-# np.savetxt(f"{dir_name}/pCN_sampler-sigma.txt", samples_sigmapCN[:])
-# with open(f"{dir_name}/pCN_sampler_info.txt", 'w') as f:
-#     msg = f"""N = {N_pCN}\n\nthin_step={thin_step}\n\nomega={omega}\n\nAcceptance rate: {accept_rate:.1f}%"""
-#     f.write(msg)
+np.savetxt(f"{dir_name}/pCN_sampler-paths.txt", samplespCN[:, :])
+np.savetxt(f"{dir_name}/pCN_sampler-alpha.txt", samples_alphapCN[:])
+np.savetxt(f"{dir_name}/pCN_sampler-sigma.txt", samples_sigmapCN[:])
+with open(f"{dir_name}/pCN_sampler_info.txt", 'w') as f:
+    msg = f"""N = {N_pCN}\n\nthin_step={thin_step}\n\nomega={omega}\n\nAcceptance rate: {accept_rate:.1f}%"""
+    f.write(msg)
 
 end_time = time.time()
 print(f"Running time: {(end_time-start_time)/60:.2f}min")

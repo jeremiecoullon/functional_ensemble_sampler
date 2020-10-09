@@ -8,11 +8,9 @@ from advection_sampler.advection_posterior import samplePrior, num_pt, evects, I
 from advection_sampler.advection_posterior import logPriorIC, logPost, invG, sampleG, get_KL_weights, inverseKL
 
 
-# Sampler
 
 L = 100 # number of walkers
 N = 20000000 # number of iterations
-# N = 2000 # number of iterations
 
 # =====================
 # # TEST SAMPLER: SAMPLE FROM THE PRIOR
@@ -31,9 +29,6 @@ N_saved = int(N/thin_samples)
 currentX = np.array([np.sqrt(1-0.9**2)*(true_IC-IC_prior_mean) + 0.9*samplePrior() for e in range(L)])
 currentU = np.array([np.random.uniform(0.4,0.6) for e in range(L)])
 
-# samples = np.zeros((N_saved, L, num_pt))
-# samplesU = np.zeros((N_saved, L))
-
 # Save only 2 chains. idx 0 is walker 0. idx 1 is the average over all walkers
 samples = np.zeros((N_saved, 2, num_pt))
 samplesU = np.zeros((N_saved, 2))
@@ -44,8 +39,6 @@ logPostList = np.zeros((N_saved, L))
 for k in range(L):
     currentLogPost[k] = logPost(u=currentU[k], IC=currentX[k,:])
     logPostList[0,k] = currentLogPost[k]
-    # samples[0,k,:] = currentX[k]
-    # samplesU[0,k] = currentU[k]
 
 # walker 0
 samples[0, 0,:] = currentX[0]
@@ -63,15 +56,14 @@ def run_MCMC(M_trunc, omega):
     if L < M_trunc+2:
         raise ValueError(f"Number of walkers must be >= {M_trunc+2} (d+2)")
 
-    # dir_name_base = f"outputs/advection_sampler/ensemble_sampler/L_{L}/"
-    # Path(dir_name_base).mkdir(exist_ok=True)
-    # dir_name = f"outputs/advection_sampler/ensemble_sampler/L_{L}/M_{M_trunc}"
-    # Path(dir_name).mkdir(exist_ok=True)
     if 'global_storage' in os.environ:
         global_storage_path = os.environ['global_storage'] + "/"
     else:
         global_storage_path = ""
     dir_name_base = f"{global_storage_path}outputs/advection_sampler/loss_sd-02-t_1_2/ensemble_sampler/L_{L}"
+    Path(f"{global_storage_path}outputs/advection_sampler").mkdir(exist_ok=True)
+    Path(f"{global_storage_path}outputs/advection_sampler/loss_sd-02-t_1_2").mkdir(exist_ok=True)
+    Path(f"{global_storage_path}outputs/advection_sampler/loss_sd-02-t_1_2/ensemble_sampler").mkdir(exist_ok=True)
     Path(dir_name_base).mkdir(exist_ok=True)
     dir_name = f"{global_storage_path}outputs/advection_sampler/loss_sd-02-t_1_2/ensemble_sampler/L_{L}/M_{M_trunc}"
     Path(dir_name).mkdir(exist_ok=True)
@@ -80,7 +72,6 @@ def run_MCMC(M_trunc, omega):
     num_acceptsAIES = 0
     num_proposals_AIES = 0
     num_proposals_pCN = 0
-    # TODO: Fix acceptance rate calculation (MwG sampler)
 
     # Matrices to project on finite basis and CS:
     if M_trunc>0:
@@ -141,9 +132,6 @@ def run_MCMC(M_trunc, omega):
         # update chain
         if i%thin_samples == 0:
             i_save = int(i/thin_samples)
-            # samples[i_save,:,:] = currentX
-            # samplesU[i_save,:] = currentU
-
             # walker 0
             samples[i_save,0,:] = currentX[0,:]
             samplesU[i_save,0] = currentU[0]

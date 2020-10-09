@@ -14,9 +14,7 @@ from langevin_functions import true_path, le_obs, array_obs_points, log_post, si
 N = 20000000
 thin_step = 200
 
-# omega = 0.55
 omega = 0.6
-# omega = 0.85
 M_trunc = 5
 L = 100
 a_prop = 2
@@ -115,13 +113,12 @@ def ensemble_step(args):
     return currentX, currentAlpha, currentSigma, currentLogPost, RSGS_param, acceptBool
 
 
-# dir_name = f"outputs/langevin_sampler/test_sampler_sigma3_alpha8/ensemble_sampler/L_{L}-a_{a_prop}"
-
-# dir_name = f"outputs/langevin_sampler/sigma-3_alpha-8/ensemble_sampler/L_{L}-a_{a_prop}"
 if 'global_storage' in os.environ:
     global_storage_path = os.environ['global_storage'] + "/"
 else:
     global_storage_path = ""
+Path(f"{global_storage_path}outputs/langevin_sampler_sine4/sigma-4_alpha-12/ensemble_sampler/").mkdir(exist_ok=True)
+Path(f"{global_storage_path}outputs/langevin_sampler_sine4/sigma-4_alpha-12/ensemble_sampler/L_{L}-a_{a_prop}").mkdir(exist_ok=True)
 dir_name = f"{global_storage_path}outputs/langevin_sampler_sine4/sigma-4_alpha-12/ensemble_sampler/L_{L}-a_{a_prop}/MwG"
 Path(dir_name).mkdir(exist_ok=True)
 

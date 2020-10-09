@@ -16,9 +16,6 @@ omega = 0.15
 # ===============
 # fit covariance to pre-run
 print("Loading prerun and fitting proposal covariance...")
-# dir_name_prerun = "outputs/langevin_sampler_sine4/sigma-4_alpha-12/pCN_sampler/"
-#
-#
 N_obs_adapt = 5000 # number of observations in prerun to fit mean and covariance. Note that the prerun is thinned by 100
 
 emp_cov = np.genfromtxt("data/cov_langevin_hybrid.txt")
@@ -27,7 +24,6 @@ print("Done fitting proposal covariance.")
 
 delta_cov = 1e-10
 cov_parm_Hybrid = delta_cov*np.eye(M_trunc+2) + emp_cov
-# rec_mean = np.mean(parm_and_weights, axis=1)
 rec_mean = np.genfromtxt("data/rec_mean_langevin_hybrid.txt")
 
 
@@ -49,7 +45,6 @@ N_thin = int(N/thin_step)
 samplesHybrid = np.zeros((N_thin, num_pt))
 samples_alphaHybrid = np.zeros(N_thin)
 samples_sigmaHybrid = np.zeros(N_thin)
-# alpha_variance_array = np.zeros(N_thin)
 cov_diag_array = np.zeros((N_thin, M_trunc+2))
 
 currentSampleHybrid = samplePrior()
@@ -59,7 +54,6 @@ current_sigmaHybrid = 0
 currentLogPost = log_post(W=currentSampleHybrid, log_alpha=current_alphaHybrid, log_sigma=current_sigmaHybrid)
 log_post_list = np.zeros(N_thin)
 log_post_list[0] = currentLogPost
-# alpha_variance_array[0] = cov_parm_Hybrid[0,0] - delta_cov
 cov_diag_array[0,:] = np.diag(cov_parm_Hybrid) - np.ones(M_trunc+2)*delta_cov
 num_accepts = 0
 
@@ -112,30 +106,27 @@ for i in range(1, N):
         samplesHybrid[i_thin] = currentSampleHybrid
         samples_alphaHybrid[i_thin] = current_alphaHybrid
         samples_sigmaHybrid[i_thin] = current_sigmaHybrid
-        # alpha_variance_array[i_thin] = cov_parm_Hybrid[0,0] - delta_cov
         cov_diag_array[i_thin,:] = np.diag(cov_parm_Hybrid) - np.ones(M_trunc+2)*delta_cov
     if i%2000000==0:
         print(f"Iteration {i}/{N}")
-        # np.savetxt(f"{dir_name}/hybrid_sampler-paths.txt", samplesHybrid[:, :])
-        # np.savetxt(f"{dir_name}/hybrid_sampler-alpha.txt", samples_alphaHybrid[:])
-        # np.savetxt(f"{dir_name}/hybrid_sampler-sigma.txt", samples_sigmaHybrid[:])
-        # np.savetxt(f"{dir_name}/hybrid_sampler-array_accepts.txt", array_accepts)
-        # # np.savetxt(f"{dir_name}/hybrid_sampler-alpha_variance_array.txt", alpha_variance_array)
-        # np.savetxt(f"{dir_name}/hybrid_sampler-cov_diag_array.txt", cov_diag_array)
+        np.savetxt(f"{dir_name}/hybrid_sampler-paths.txt", samplesHybrid[:, :])
+        np.savetxt(f"{dir_name}/hybrid_sampler-alpha.txt", samples_alphaHybrid[:])
+        np.savetxt(f"{dir_name}/hybrid_sampler-sigma.txt", samples_sigmaHybrid[:])
+        np.savetxt(f"{dir_name}/hybrid_sampler-array_accepts.txt", array_accepts)
+        np.savetxt(f"{dir_name}/hybrid_sampler-cov_diag_array.txt", cov_diag_array)
 
 accept_rate = num_accepts / N * 100
 print("Done.")
 print(f"Acceptance rate: {accept_rate:.2f}%")
 
-# np.savetxt(f"{dir_name}/hybrid_sampler-paths.txt", samplesHybrid[:, :])
-# np.savetxt(f"{dir_name}/hybrid_sampler-alpha.txt", samples_alphaHybrid[:])
-# np.savetxt(f"{dir_name}/hybrid_sampler-sigma.txt", samples_sigmaHybrid[:])
-# np.savetxt(f"{dir_name}/hybrid_sampler-array_accepts.txt", array_accepts)
-# # np.savetxt(f"{dir_name}/hybrid_sampler-alpha_variance_array.txt", alpha_variance_array)
-# np.savetxt(f"{dir_name}/hybrid_sampler-cov_diag_array.txt", cov_diag_array)
-# with open(f"{dir_name}/hybrid_sampler_info.txt", 'w') as f:
-#     msg = f"""N = {N}\n\nthin_step={thin_step}\n\nomega={omega}\n\nM={M_trunc}\n\nAcceptance rate: {accept_rate:.1f}%"""
-#     f.write(msg)
+np.savetxt(f"{dir_name}/hybrid_sampler-paths.txt", samplesHybrid[:, :])
+np.savetxt(f"{dir_name}/hybrid_sampler-alpha.txt", samples_alphaHybrid[:])
+np.savetxt(f"{dir_name}/hybrid_sampler-sigma.txt", samples_sigmaHybrid[:])
+np.savetxt(f"{dir_name}/hybrid_sampler-array_accepts.txt", array_accepts)
+np.savetxt(f"{dir_name}/hybrid_sampler-cov_diag_array.txt", cov_diag_array)
+with open(f"{dir_name}/hybrid_sampler_info.txt", 'w') as f:
+    msg = f"""N = {N}\n\nthin_step={thin_step}\n\nomega={omega}\n\nM={M_trunc}\n\nAcceptance rate: {accept_rate:.1f}%"""
+    f.write(msg)
 
 end_time = time.time()
 print(f"Running time: {(end_time-start_time)/60:.2f}min")

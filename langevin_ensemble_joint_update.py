@@ -95,10 +95,7 @@ def ensemble_step(args):
     return currentX, currentAlpha, currentSigma, currentLogPost, acceptStretch
 
 
-
 # ================
-# num_cores = mp.cpu_count()
-# pool = mp.Pool(num_cores)
 
 def run_ensemble_sampler():
     N_thin = int(N/thin_step)
@@ -120,12 +117,12 @@ def run_ensemble_sampler():
     logPostList[0, 1] = np.mean(currentLogPost) # average over all walkers
     num_accepts_joint = 0
 
-    # dir_name = f"outputs/langevin_sampler/sigma-3_alpha-8/ensemble_sampler/L_{L}-a_{a_prop}"
     if 'global_storage' in os.environ:
         global_storage_path = os.environ['global_storage'] + "/"
     else:
         global_storage_path = ""
     dir_name = f"{global_storage_path}outputs/langevin_sampler_sine4/sigma-4_alpha-12/ensemble_sampler/L_{L}-a_{a_prop}/joint_update"
+    Path(f"{global_storage_path}outputs/langevin_sampler_sine4/sigma-4_alpha-12/ensemble_sampler/L_{L}-a_{a_prop}).mkdir(exist_ok=True)
     Path(dir_name).mkdir(exist_ok=True)
 
     start_time = time.time()

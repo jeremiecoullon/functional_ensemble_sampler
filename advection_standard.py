@@ -15,11 +15,15 @@ Nstandard = 5000#00000
 thin_samples = 5000
 
 if 'global_storage' in os.environ:
-    global_storage_path = os.environ['global_storage']
+    global_storage_path = os.environ['global_storage'] + "/"
 else:
     global_storage_path = ""
 
-dir_name = f"{global_storage_path}/outputs/advection_sampler/loss_sd-02-t_1_2"
+# Make the relevant folders
+dir_name = f"{global_storage_path}outputs/advection_sampler/loss_sd-02-t_1_2/pCN"
+Path(f"{global_storage_path}outputs/advection_sampler").mkdir(exist_ok=True)
+Path(f"{global_storage_path}outputs/advection_sampler/loss_sd-02-t_1_2").mkdir(exist_ok=True)
+Path(dir_name).mkdir(exist_ok=True)
 
 
 assert Nstandard % thin_samples == 0
@@ -77,8 +81,8 @@ for i in range(1, Nstandard):
     if i%5000000==0:
         print(f"Iteration {i}/{Nstandard}")
         print("Saving samples.")
-        np.savetxt(f"{dir_name}/pCN/standard_IC_samples.txt", standardICsamples)
-        np.savetxt(f"{dir_name}/pCN/standard_u_samples.txt", standarduSamples)
+        np.savetxt(f"{dir_name}/standard_IC_samples.txt", standardICsamples)
+        np.savetxt(f"{dir_name}/standard_u_samples.txt", standarduSamples)
         print("Done.")
 
 acceptance_rate = num_accepts / Nstandard * 100
@@ -89,6 +93,6 @@ print(f"Running time: {(end-start)/60:.2f}min")
 print("Done sampling.")
 # save samples
 print("Saving samples.")
-np.savetxt(f"{dir_name}/pCN/standard_IC_samples.txt", standardICsamples)
-np.savetxt(f"{dir_name}/pCN/standard_u_samples.txt", standarduSamples)
+np.savetxt(f"{dir_name}/standard_IC_samples.txt", standardICsamples)
+np.savetxt(f"{dir_name}/standard_u_samples.txt", standarduSamples)
 print("Done.")
