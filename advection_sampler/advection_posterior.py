@@ -28,7 +28,6 @@ def samplePrior():
 
 # Use saved true_IC & data array
 true_IC = np.genfromtxt("data/thesis_Advection_true_IC.csv")
-# data_array = np.genfromtxt("data/advection_data_array_sigma05.csv")
 data_array = np.genfromtxt("data/advection_data_array_sigma02_t_1-2.csv") # t in (1, 2)
 
 # Generate advection data

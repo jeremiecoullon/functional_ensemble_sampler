@@ -4,6 +4,7 @@ __pycache__/
 .DS_Store
 */.DS_Store
 *.pdf
+OLD_outputs/*
 outputs/*
 other_samples
 venv

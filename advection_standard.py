@@ -10,11 +10,14 @@ Joint proposal for the initial condition and the wave speed u: pCN and Gaussian 
 """
 
 
-# Nstandard = 3000000
-Nstandard = 500000000
+
+Nstandard = 5000#00000
 thin_samples = 5000
 
-global_storage_path = os.environ['global_storage']
+if 'global_storage' in os.environ:
+    global_storage_path = os.environ['global_storage']
+else:
+    global_storage_path = ""
 
 dir_name = f"{global_storage_path}/outputs/advection_sampler/loss_sd-02-t_1_2"
 

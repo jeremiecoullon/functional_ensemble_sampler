@@ -20,24 +20,15 @@ print("Loading prerun and fitting proposal covariance...")
 #
 #
 N_obs_adapt = 5000 # number of observations in prerun to fit mean and covariance. Note that the prerun is thinned by 100
-# samples_pCN_prerun = np.genfromtxt(f"{dir_name_prerun}/pCN_sampler-paths.txt")[:N_obs_adapt, :]
-# samples_alpha_pCN_prerun = np.genfromtxt(f"{dir_name_prerun}/pCN_sampler-alpha.txt")[:N_obs_adapt]
-# samples_sigma_pCN_prerun = np.genfromtxt(f"{dir_name_prerun}/pCN_sampler-sigma.txt")[:N_obs_adapt]
-#
-# # Fit proposal cov to prerun
-# weights_samples_lowdim = np.array([get_KL_weights(e)[-M_trunc:] for e in samples_pCN_prerun[:]])
-# parm_array = np.array([samples_alpha_pCN_prerun[:], samples_sigma_pCN_prerun[:]])
-# parm_and_weights = np.concatenate([parm_array, weights_samples_lowdim.T])
-# # Fit proposal covariance for alpha and sigma
-# emp_cov = np.cov(parm_and_weights)
-emp_cov = np.genfromtxt("cov_langevin_hybrid.txt")
+
+emp_cov = np.genfromtxt("data/cov_langevin_hybrid.txt")
 print("Done fitting proposal covariance.")
 # ===============
 
 delta_cov = 1e-10
 cov_parm_Hybrid = delta_cov*np.eye(M_trunc+2) + emp_cov
 # rec_mean = np.mean(parm_and_weights, axis=1)
-rec_mean = np.genfromtxt("rec_mean_langevin_hybrid.txt")
+rec_mean = np.genfromtxt("data/rec_mean_langevin_hybrid.txt")
 
 
 
@@ -125,26 +116,26 @@ for i in range(1, N):
         cov_diag_array[i_thin,:] = np.diag(cov_parm_Hybrid) - np.ones(M_trunc+2)*delta_cov
     if i%2000000==0:
         print(f"Iteration {i}/{N}")
-        np.savetxt(f"{dir_name}/hybrid_sampler-paths.txt", samplesHybrid[:, :])
-        np.savetxt(f"{dir_name}/hybrid_sampler-alpha.txt", samples_alphaHybrid[:])
-        np.savetxt(f"{dir_name}/hybrid_sampler-sigma.txt", samples_sigmaHybrid[:])
-        np.savetxt(f"{dir_name}/hybrid_sampler-array_accepts.txt", array_accepts)
-        # np.savetxt(f"{dir_name}/hybrid_sampler-alpha_variance_array.txt", alpha_variance_array)
-        np.savetxt(f"{dir_name}/hybrid_sampler-cov_diag_array.txt", cov_diag_array)
+        # np.savetxt(f"{dir_name}/hybrid_sampler-paths.txt", samplesHybrid[:, :])
+        # np.savetxt(f"{dir_name}/hybrid_sampler-alpha.txt", samples_alphaHybrid[:])
+        # np.savetxt(f"{dir_name}/hybrid_sampler-sigma.txt", samples_sigmaHybrid[:])
+        # np.savetxt(f"{dir_name}/hybrid_sampler-array_accepts.txt", array_accepts)
+        # # np.savetxt(f"{dir_name}/hybrid_sampler-alpha_variance_array.txt", alpha_variance_array)
+        # np.savetxt(f"{dir_name}/hybrid_sampler-cov_diag_array.txt", cov_diag_array)
 
 accept_rate = num_accepts / N * 100
 print("Done.")
 print(f"Acceptance rate: {accept_rate:.2f}%")
 
-np.savetxt(f"{dir_name}/hybrid_sampler-paths.txt", samplesHybrid[:, :])
-np.savetxt(f"{dir_name}/hybrid_sampler-alpha.txt", samples_alphaHybrid[:])
-np.savetxt(f"{dir_name}/hybrid_sampler-sigma.txt", samples_sigmaHybrid[:])
-np.savetxt(f"{dir_name}/hybrid_sampler-array_accepts.txt", array_accepts)
-# np.savetxt(f"{dir_name}/hybrid_sampler-alpha_variance_array.txt", alpha_variance_array)
-np.savetxt(f"{dir_name}/hybrid_sampler-cov_diag_array.txt", cov_diag_array)
-with open(f"{dir_name}/hybrid_sampler_info.txt", 'w') as f:
-    msg = f"""N = {N}\n\nthin_step={thin_step}\n\nomega={omega}\n\nM={M_trunc}\n\nAcceptance rate: {accept_rate:.1f}%"""
-    f.write(msg)
+# np.savetxt(f"{dir_name}/hybrid_sampler-paths.txt", samplesHybrid[:, :])
+# np.savetxt(f"{dir_name}/hybrid_sampler-alpha.txt", samples_alphaHybrid[:])
+# np.savetxt(f"{dir_name}/hybrid_sampler-sigma.txt", samples_sigmaHybrid[:])
+# np.savetxt(f"{dir_name}/hybrid_sampler-array_accepts.txt", array_accepts)
+# # np.savetxt(f"{dir_name}/hybrid_sampler-alpha_variance_array.txt", alpha_variance_array)
+# np.savetxt(f"{dir_name}/hybrid_sampler-cov_diag_array.txt", cov_diag_array)
+# with open(f"{dir_name}/hybrid_sampler_info.txt", 'w') as f:
+#     msg = f"""N = {N}\n\nthin_step={thin_step}\n\nomega={omega}\n\nM={M_trunc}\n\nAcceptance rate: {accept_rate:.1f}%"""
+#     f.write(msg)
 
 end_time = time.time()
 print(f"Running time: {(end_time-start_time)/60:.2f}min")
