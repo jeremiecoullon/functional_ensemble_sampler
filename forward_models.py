@@ -3,6 +3,7 @@ import ctypes
 import numpy as np
 from numpy.ctypeslib import ndpointer
 from BM_prior import dt, num_pt
+import os
 
 """
 Wrapper for the Euler solver in C
@@ -12,7 +13,7 @@ To compile: `gcc -fPIC -shared -o euler_solver.so src/euler_solver.c`
 
 
 # Load shared object
-lib = ctypes.cdll.LoadLibrary("euler_solver.so")
+lib = ctypes.cdll.LoadLibrary(os.path.abspath("euler_solver.so"))
 
 
 # Load Langevin dynamics function
