@@ -20,6 +20,8 @@ Get IAT values and create ACF plots for the Langevin example
 # ==============================
 dir_base = "outputs/HEC_cluster/"
 
+
+print("Loading Hybrid samples..")
 # Hybrid
 dir_name = f"{dir_base}outputs/langevin_sampler_sine4/sigma-4_alpha-12/hybrid_sampler"
 thin_step_hybrid = 300
@@ -27,7 +29,8 @@ samplesHybrid = np.genfromtxt(f"{dir_name}/hybrid_sampler-paths.txt")
 samples_alphaHybrid = np.genfromtxt(f"{dir_name}/hybrid_sampler-alpha.txt")
 samples_sigmaHybrid = np.genfromtxt(f"{dir_name}/hybrid_sampler-sigma.txt")
 
-
+print("Done.")
+print("Loading FES samples..")
 # Ensemble, joint, L=8
 L = 8
 dir_name = f"{dir_base}outputs/langevin_sampler_sine4/sigma-4_alpha-12/ensemble_sampler/L_{L}-a_2/joint_update"
@@ -52,6 +55,8 @@ MwG_samplespaths_average = np.genfromtxt(f"{dir_name}/ensemble_sampler-average-p
 MwG_samplesAlpha_average = np.genfromtxt(f"{dir_name}/ensemble_sampler-average-alpha_L{L}.txt")
 MwG_samplesSigma_average = np.genfromtxt(f"{dir_name}/ensemble_sampler-average-sigma_L{L}.txt")
 
+print("Done.")
+print("Loading pCN samples..")
 
 # Vanilla pCN
 dir_name = f"{dir_base}outputs/langevin_sampler_sine4/sigma-4_alpha-12/pCN_sampler/"
@@ -59,7 +64,7 @@ thin_step_pCN = 300
 samples_pCN = np.genfromtxt(f"{dir_name}/pCN_sampler-paths.txt")
 samples_alpha_pCN = np.genfromtxt(f"{dir_name}/pCN_sampler-alpha.txt")
 samples_sigma_pCN = np.genfromtxt(f"{dir_name}/pCN_sampler-sigma.txt")
-
+print("Done")
 
 
 # ==============================
