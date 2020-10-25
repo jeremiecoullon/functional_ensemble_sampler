@@ -25,35 +25,30 @@ dir_name = "outputs/HEC_cluster/outputs/langevin_sampler_sine4/sigma-4_alpha-12/
 cov_diag_array = np.genfromtxt(f"{dir_name}/hybrid_sampler-cov_diag_array.txt")
 thin_step_hybrid = 300
 N_hybrid = cov_diag_array.shape[0]*thin_step_hybrid
+
 rcParams.update({'font.size': 20})
 
 # look at the first 2 million samples
 cut_samples = 2000000
 
 _cut_samples_thin = int(cut_samples/thin_step_hybrid)
-fig1, ax = plt.subplots(2, 2, figsize=(14, 6), sharex=True)
+fig, ax = plt.subplots(2, 1, figsize=(9, 8), sharex=True)
 
-parm_list = ['alpha', 'beta'] + [f'coef {e}' for e in range(1,2)]
+ax[0].ticklabel_format(axis="x", style="sci", scilimits=(0,0), useMathText=True)
+ax[1].ticklabel_format(axis="x", style="sci", scilimits=(0,0), useMathText=True)
 
-ax[(0,0)].plot(np.arange(0, N_hybrid, thin_step_hybrid)[:_cut_samples_thin], cov_diag_array[:_cut_samples_thin,0])
-ax[(0,0)].set_ylabel('alpha', size=22)
+ax[0].plot(np.arange(0, N_hybrid, thin_step_hybrid)[:_cut_samples_thin], cov_diag_array[:_cut_samples_thin,0])
+ax[0].set_ylabel(r'$\alpha$', size=26, rotation=0)
+ax[0].yaxis.set_label_coords(-0.1,0.5)
 
-ax[(0,1)].plot(np.arange(0, N_hybrid, thin_step_hybrid)[:_cut_samples_thin], cov_diag_array[:_cut_samples_thin,1])
-ax[(0,1)].set_ylabel('beta', size=22)
+ax[1].plot(np.arange(0, N_hybrid, thin_step_hybrid)[:_cut_samples_thin], cov_diag_array[:_cut_samples_thin,1])
+ax[1].set_ylabel(r'$\sigma$', size=26, rotation=0)
+ax[1].yaxis.set_label_coords(-0.1,0.5)
 
-ax[(1,0)].plot(np.arange(0, N_hybrid, thin_step_hybrid)[:_cut_samples_thin], cov_diag_array[:_cut_samples_thin,2])
-ax[(1,0)].set_ylabel('Coef 1', size=22)
-
-ax[(1,1)].plot(np.arange(0, N_hybrid, thin_step_hybrid)[:_cut_samples_thin], cov_diag_array[:_cut_samples_thin,3])
-ax[(1,1)].set_ylabel('Coef 2', size=22)
-
-ax[(1,0)].set_xlabel("Iteration", size=20)
-ax[(1,1)].set_xlabel("Iteration", size=20)
+ax[1].set_xlabel("Iteration", size=20)
 
 plt.tight_layout()
-
 # plt.savefig("images/paper_images/langevin_hybrid-variance_adaptation.png")
-
 
 # ==============================
 # Posterior plot
@@ -63,23 +58,23 @@ dir_name = f"outputs/HEC_cluster/outputs/langevin_sampler_sine4/sigma-4_alpha-12
 
 thin_step = 200
 
-samplespaths_walker0 = np.genfromtxt(f"{dir_name}/ensemble_sampler-walker0-paths_L{L}.txt")[:35000]
-samplesAlpha = np.genfromtxt(f"{dir_name}/ensemble_sampler-walker0-alpha_L{L}.txt")[:35000]
-samplesSigma = np.genfromtxt(f"{dir_name}/ensemble_sampler-walker0-sigma_L{L}.txt")[:35000]
+samplespaths_walker0 = np.genfromtxt(f"{dir_name}/ensemble_sampler-walker0-paths_L{L}.txt")
+samplesAlpha = np.genfromtxt(f"{dir_name}/ensemble_sampler-walker0-alpha_L{L}.txt")
+samplesSigma = np.genfromtxt(f"{dir_name}/ensemble_sampler-walker0-sigma_L{L}.txt")
+burnin_MwG = int(0.1*samplesAlpha.shape[0])
 
 N_L = samplespaths_walker0.shape[0]
-burnin = 500
 plt.rcParams.update({'font.size': 18})
 
 # alpha and sigma posterior pdf
-fig2, ax = plt.subplots(2, figsize=(12, 8))
-ax[0].hist(np.exp(samplesAlpha[burnin:]), bins=170, color="#56B4E9")
-ax[0].set_xlabel("Alpha", size=20)
-ax[1].hist(np.exp(samplesSigma[burnin:]), bins=150, color="#56B4E9")
-ax[1].set_xlabel("Sigma", size=20)
+fig, ax = plt.subplots(2, figsize=(12, 8))
+ax[0].hist(np.exp(samplesAlpha[burnin_MwG:]), bins=170, color="#56B4E9")
+ax[0].set_xlabel(r"$\alpha$", size=26)
+ax[1].hist(np.exp(samplesSigma[burnin_MwG:]), bins=150, color="#56B4E9")
+ax[1].set_xlabel(r"$\sigma$", size=26)
 
-ax[0].set_xlim((0, 80))
-ax[1].set_xlim((0, 10))
+ax[0].set_xlim((0, 55))
+ax[1].set_xlim((0, 8))
 plt.tight_layout()
 # plt.savefig("images/paper_images/posterior_params.png")
 plt.show()
@@ -92,18 +87,18 @@ plot_thin_step = 30
 
 plt.figure(figsize=(10,8))
 
-for i in range(burnin, N_L, plot_thin_step):
+for i in range(burnin_MwG, N_L, plot_thin_step):
     X_t, P_t = solve_Langevin(samplespaths_walker0[i, :], np.exp(samplesAlpha[i]), np.exp(samplesSigma[i]))
     plt.plot(x_range, X_t, alpha=0.01, c='#56B4E9')
 
 plt.scatter(array_obs_points, le_obs, c='#009E73', label="observations", s=80)
 plt.plot(x_range, true_path, label="true path", c='#D55E00', lw=4, alpha=0.9)
+# plt.plot(x_range, another_path, label="true path", c='blue')
 
 plt.ylim((-2.7, 2.7))
 plt.legend()
-plt.xlabel(r"$t$", size=25)
-plt.ylabel(r"$X_t$", size=25)
-
+plt.xlabel(r"$t$", size=26)
+plt.ylabel(r"$X_t$", size=26, rotation=0)
 
 # plt.savefig("images/paper_images/posterior_Xt_paths.png")
 plt.show()

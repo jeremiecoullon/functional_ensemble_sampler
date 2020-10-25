@@ -50,12 +50,15 @@ N_ensemble, _ = samples_dict[M_trunc]['samples'].shape
 print("Done")
 print(f"N_ensemble: {N_ensemble}")
 
+# burnin: 10% of the run length
+burnin_dict = {k: int(0.1*v['samplesU'].shape[0]) for k,v in samples_dict.items()}
+burnin_pCN = int(0.1*standard_samples.shape[0])
+
 
 # ==============================
 # IAT values
 # ==============================
 le_tol = 100
-burnin_pCN = 500
 
 
 print("=====\n")
@@ -68,7 +71,6 @@ for basis_number in [1, 5, 15, 100]:
     print(f"basis element {basis_number}: {thin_step_pCN*integrated_time(array_weights, tol=le_tol)[0]:.0f}")
 
 le_tol = 100
-burnin = 100
 
 
 for M_trunc in [0, 1,5,10, 20]:
@@ -77,14 +79,14 @@ for M_trunc in [0, 1,5,10, 20]:
     N_ensemble = samples_dict[M_trunc]['samples'].shape[0]
 
     if M_trunc == 0:
-        cut_end = 95000
+        cut_end = 95000 # the sampler for M=0 stopped a bit early, so the last few iterations are all zeros.
     else:
         cut_end = N_ensemble
 
     print(f"N_ensemble = {N_ensemble*thin_dict[M_trunc]}")
-    print(f"c: {thin_dict[M_trunc]*integrated_time(samples_dict[M_trunc]['samplesU'][burnin:cut_end], tol=le_tol)[0]:.0f}")
+    print(f"c: {thin_dict[M_trunc]*integrated_time(samples_dict[M_trunc]['samplesU'][burnin_dict[M_trunc]:cut_end], tol=le_tol)[0]:.0f}")
     for basis_number in [1, 5, 15, 100]:
-        array_weights = np.array([get_KL_weights(samples_dict[M_trunc]['samples'][i, :])[-basis_number] for i in range(burnin, cut_end)])
+        array_weights = np.array([get_KL_weights(samples_dict[M_trunc]['samples'][i, :])[-basis_number] for i in range(burnin_dict[M_trunc], cut_end)])
 
         print(f"basis element {basis_number}: {thin_dict[M_trunc]*integrated_time(array_weights, tol=le_tol)[0]:.0f}")
 
@@ -102,67 +104,76 @@ colorlist = ["#CC79A7", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00"]
 
 x_range = np.arange(0, (num_lags+1)*100, 100)
 
-fig, ax = plt.subplots(1, 3, figsize=(14, 5))
-for idx in range(3):
-    ax[idx].ticklabel_format(axis="x", style="sci", scilimits=(0,0), useMathText=True)
+fig, ax = plt.subplots(2, 1, figsize=(9, 12))
 
+ax[0].ticklabel_format(axis="x", style="sci", scilimits=(0,0), useMathText=True)
+ax[1].ticklabel_format(axis="x", style="sci", scilimits=(0,0), useMathText=True)
+
+# ============
+# ============
 # pCN
 plot_pCN = ax[0].plot(x_range[::50], acf(standard_samplesU[burnin_pCN:], nlags=num_lags/50, fft=False),
                       label=f"pCN", c=colorlist[0], marker=markerlist[0], markersize=markersize)[0]
-for idx, basis_number in enumerate([1, 20], 1):
-    array_weights = np.array([get_KL_weights(standard_samples[i, :])[-basis_number] for i in range(burnin_pCN, N_standard)])
-    ax[idx].plot(x_range[::50], acf(array_weights, nlags=num_lags/50, fft=False),
-                 label=f"pCN", c=colorlist[0], marker=markerlist[0], markersize=markersize)
+
+basis_number = 1
+array_weights = np.array([get_KL_weights(standard_samples[i, :])[-basis_number] for i in range(burnin_pCN, N_standard)])
+ax[1].plot(x_range[::50], acf(array_weights, nlags=num_lags/50, fft=False),
+             label=f"pCN", c=colorlist[0], marker=markerlist[0], markersize=markersize)
 
 
+# ============
+# ============
+# FES
 M_trunc = 0
-M_samples = samples_dict[M_trunc]['samplesU'][400:-5000]
+M_samples = samples_dict[M_trunc]['samplesU'][burnin_dict[M_trunc]:95000]
 plot_FES_0 = ax[0].plot(x_range[::40], acf(M_samples, nlags=num_lags/2, fft=False)[::20],
                         label=f"M={M_trunc}", c=colorlist[1], marker=markerlist[1], markersize=markersize)
-for idx, basis_number in enumerate([1, 20], 1):
-    array_weights = np.array([get_KL_weights(samples_dict[M_trunc]['samples'][i, :])[-basis_number] for i in range(400, 30000)])
-    ax[idx].plot(x_range[::40], acf(array_weights, nlags=num_lags/2, fft=False)[::20],
-                 label=f"M={M_trunc}", c=colorlist[1], marker=markerlist[1], markersize=markersize)
+basis_number = 1
+array_weights = np.array([get_KL_weights(samples_dict[M_trunc]['samples'][i, :])[-basis_number] for i in range(burnin_dict[M_trunc], M_samples.shape[0])])
+ax[1].plot(x_range[::40], acf(array_weights, nlags=num_lags/2, fft=False)[::20],
+             label=f"M={M_trunc}", c=colorlist[1], marker=markerlist[1], markersize=markersize)
 
 M_trunc = 1
-M_samples = samples_dict[M_trunc]['samplesU'][400:]
+M_samples = samples_dict[M_trunc]['samplesU'][burnin_dict[M_trunc]:]
 plot_FES_1 = ax[0].plot(x_range[::40], acf(M_samples, nlags=num_lags/2, fft=False)[::20],
                         label=f"M={M_trunc}", c=colorlist[2], marker=markerlist[2], markersize=markersize)
-for idx, basis_number in enumerate([1, 20], 1):
-    array_weights = np.array([get_KL_weights(samples_dict[M_trunc]['samples'][i, :])[-basis_number] for i in range(400, 30000)])
-    ax[idx].plot(x_range[::40], acf(array_weights, nlags=num_lags/2, fft=False)[::20],
-                 label=f"M={M_trunc}", c=colorlist[2], marker=markerlist[2], markersize=markersize)
+basis_number = 1
+array_weights = np.array([get_KL_weights(samples_dict[M_trunc]['samples'][i, :])[-basis_number] for i in range(burnin_dict[M_trunc], M_samples.shape[0])])
+ax[1].plot(x_range[::40], acf(array_weights, nlags=num_lags/2, fft=False)[::20],
+             label=f"M={M_trunc}", c=colorlist[2], marker=markerlist[2], markersize=markersize)
 
 
 # 5,10,20 are thinned by 100
 p_dict_FES = {}
-burnin_FES = 100
 for M_idx, M_trunc in enumerate([5,10,20]):
-    M_samples = samples_dict[M_trunc]['samplesU'][burnin_FES:N_ensemble]
+    M_samples = samples_dict[M_trunc]['samplesU'][burnin_dict[M_trunc]:]
+    N_ensemble = M_samples.shape[0]
     p_dict_FES[M_trunc] = ax[0].plot(x_range[::10], acf(M_samples, nlags=num_lags, fft=False)[::10],
                                      label=f"M={M_trunc}", c=colorlist[M_idx+3], marker=markerlist[M_idx+3], markersize=markersize)
 
-    for idx, basis_number in enumerate([1, 20], 1):
-        array_weights = np.array([get_KL_weights(samples_dict[M_trunc]['samples'][i, :])[-basis_number] for i in range(burnin_FES, N_ensemble)])
-        ax[idx].plot(x_range[::10], acf(array_weights, nlags=num_lags, fft=False)[::10],
-                     label=f"M={M_trunc}", c=colorlist[M_idx+3], marker=markerlist[M_idx+3], markersize=markersize)
+    basis_number = 1
+    array_weights = np.array([get_KL_weights(samples_dict[M_trunc]['samples'][i, :])[-basis_number] for i in range(burnin_dict[M_trunc], N_ensemble)])
+    ax[1].plot(x_range[::10], acf(array_weights, nlags=num_lags, fft=False)[::10],
+                 label=f"M={M_trunc}", c=colorlist[M_idx+3], marker=markerlist[M_idx+3], markersize=markersize)
 
 
 ax[0].set_title("ACF for the wavespeed c", size=20)
 ax[1].set_title("ACF for KL coef 1", size=20)
-ax[2].set_title("ACF for KL coef 20", size=20)
 
 ax[0].set_xlabel("Lags", size=20)
 ax[1].set_xlabel("Lags", size=20)
-ax[2].set_xlabel("Lags", size=20)
+
+ax[0].set_ylabel("ACF", size=20)
+ax[1].set_ylabel("ACF", size=20)
 
 # plt.legend()
 fig.legend([plot_pCN, plot_FES_0, plot_FES_1] + list(p_dict_FES.values()),
            labels=['pCN', "M_0", "M=1", "M=5", "M=10", "M=20"],
-           loc="center right",
-           borderaxespad=-0.2,
-          prop={'size': 18}
+           loc="upper right",   # Position of legend
+#            borderaxespad=-0.2,    # Small spacing around legend box
+           bbox_to_anchor=(-0.02,-0.04,1,1),
+          prop={'size': 17}
            )
-
+plt.tight_layout()
 # plt.savefig("images/paper_images/advection_ACF.png")
 plt.show()

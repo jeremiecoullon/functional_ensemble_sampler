@@ -38,21 +38,19 @@ joint8_samplesSigma_average = np.genfromtxt(f"{dir_name}/ensemble_sampler-averag
 
 
 # Ensemble, joint, L=100
-# this one stopped at 30K
 L = 100
 dir_name = f"{dir_base}outputs/langevin_sampler_sine4/sigma-4_alpha-12/ensemble_sampler/L_{L}-a_2/joint_update"
-joint100_samplespaths_average = np.genfromtxt(f"{dir_name}/ensemble_sampler-average-paths_L{L}.txt")[:30000]
-joint100_samplesAlpha_average = np.genfromtxt(f"{dir_name}/ensemble_sampler-average-alpha_L{L}.txt")[:30000]
-joint100_samplesSigma_average = np.genfromtxt(f"{dir_name}/ensemble_sampler-average-sigma_L{L}.txt")[:30000]
+joint100_samplespaths_average = np.genfromtxt(f"{dir_name}/ensemble_sampler-average-paths_L{L}.txt")
+joint100_samplesAlpha_average = np.genfromtxt(f"{dir_name}/ensemble_sampler-average-alpha_L{L}.txt")
+joint100_samplesSigma_average = np.genfromtxt(f"{dir_name}/ensemble_sampler-average-sigma_L{L}.txt")
 
 
 # Ensemble, MwG
-# this one stopped at 35K
 L = 100
 dir_name = f"{dir_base}outputs/langevin_sampler_sine4/sigma-4_alpha-12/ensemble_sampler/L_{L}-a_2/MwG"
-MwG_samplespaths_average = np.genfromtxt(f"{dir_name}/ensemble_sampler-average-paths_L{L}.txt")[:35000]
-MwG_samplesAlpha_average = np.genfromtxt(f"{dir_name}/ensemble_sampler-average-alpha_L{L}.txt")[:35000]
-MwG_samplesSigma_average = np.genfromtxt(f"{dir_name}/ensemble_sampler-average-sigma_L{L}.txt")[:35000]
+MwG_samplespaths_average = np.genfromtxt(f"{dir_name}/ensemble_sampler-average-paths_L{L}.txt")
+MwG_samplesAlpha_average = np.genfromtxt(f"{dir_name}/ensemble_sampler-average-alpha_L{L}.txt")
+MwG_samplesSigma_average = np.genfromtxt(f"{dir_name}/ensemble_sampler-average-sigma_L{L}.txt")
 
 
 # Vanilla pCN
@@ -67,14 +65,18 @@ samples_sigma_pCN = np.genfromtxt(f"{dir_name}/pCN_sampler-sigma.txt")
 # ==============================
 # IAT values
 # ==============================
-burnin = 100
+burnin_joint_8 = int(0.1*joint8_samplesAlpha_average.shape[0])
+burnin_joint_100 = int(0.1*joint100_samplesAlpha_average.shape[0])
+burnin_MwG = int(0.1*MwG_samplesAlpha_average.shape[0])
+burnin_hybrid = int(0.1*samples_alphaHybrid.shape[0])
+burnin_pCN = int(0.1*samples_alpha_pCN.shape[0])
 
 # alpha:
-IAT_joint_8 = integrated_time(joint8_samplesAlpha_average[burnin:])[0]*thin_step_ensemble
-IAT_joint_100 = integrated_time(joint100_samplesAlpha_average[burnin:])[0]*thin_step_ensemble
-IAT_MwG = integrated_time(MwG_samplesAlpha_average[burnin:])[0]*thin_step_ensemble
-IAT_hybrid = integrated_time(samples_alphaHybrid[burnin:])[0]*thin_step_hybrid
-IAT_pCN = integrated_time(samples_alpha_pCN[burnin:])[0]*thin_step_pCN
+IAT_joint_8 = integrated_time(joint8_samplesAlpha_average[burnin_joint_8:])[0]*thin_step_ensemble
+IAT_joint_100 = integrated_time(joint100_samplesAlpha_average[burnin_joint_100:])[0]*thin_step_ensemble
+IAT_MwG = integrated_time(MwG_samplesAlpha_average[burnin_MwG:])[0]*thin_step_ensemble
+IAT_hybrid = integrated_time(samples_alphaHybrid[burnin_hybrid:])[0]*thin_step_hybrid
+IAT_pCN = integrated_time(samples_alpha_pCN[burnin_pCN:])[0]*thin_step_pCN
 
 print(f"IAT for alpha")
 print(f"pCN: {IAT_pCN:.0f}")
@@ -84,11 +86,11 @@ print(f"Ensemble joint, L=100: {IAT_joint_100:.0f}")
 print(f"Ensemble MwG: {IAT_MwG:.0f}")
 
 # sigma:
-IAT_joint_8 = integrated_time(joint8_samplesSigma_average[burnin:])[0]*thin_step_ensemble
-IAT_joint_100 = integrated_time(joint100_samplesSigma_average[burnin:])[0]*thin_step_ensemble
-IAT_MwG = integrated_time(MwG_samplesSigma_average[burnin:])[0]*thin_step_ensemble
-IAT_hybrid = integrated_time(samples_sigmaHybrid[burnin:])[0]*thin_step_hybrid
-IAT_pCN = integrated_time(samples_sigma_pCN[burnin:])[0]*thin_step_pCN
+IAT_joint_8 = integrated_time(joint8_samplesSigma_average[burnin_joint_8:])[0]*thin_step_ensemble
+IAT_joint_100 = integrated_time(joint100_samplesSigma_average[burnin_joint_100:])[0]*thin_step_ensemble
+IAT_MwG = integrated_time(MwG_samplesSigma_average[burnin_MwG:])[0]*thin_step_ensemble
+IAT_hybrid = integrated_time(samples_sigmaHybrid[burnin_hybrid:])[0]*thin_step_hybrid
+IAT_pCN = integrated_time(samples_sigma_pCN[burnin_pCN:])[0]*thin_step_pCN
 
 
 print("\n====\n")
@@ -107,7 +109,7 @@ thin_step_local = 1
 print("=====\n")
 print(f"Vanilla pCN sampler:")
 
-print("\nFor OU basis elements")
+print("\nFor KL basis elements")
 
 basislist = [1, 10, 100]
 IAT_list_pCN = []
@@ -116,13 +118,14 @@ def get_path_IAT(samples, basis_number, burnin, thin_step, le_tol=100):
     array_weights = np.array([get_KL_weights(samples[i])[-basis_number] for i in range(burnin, len(samples))])
     IAT = thin_step*integrated_time(array_weights, tol=le_tol)[0]
     return IAT
+
 basis_list = [1, 10, 100]
 
 print("IAT for pCN sampler:")
 
 for basis_number in basis_list:
     IAT_val = get_path_IAT(samples=samples_pCN, basis_number=basis_number,
-                burnin=burnin, thin_step=thin_step_pCN, le_tol=100)
+                burnin=burnin_pCN, thin_step=thin_step_pCN, le_tol=100)
     print(f"basis {basis_number}: {IAT_val:.0f}")
 
 
@@ -130,7 +133,7 @@ print("\nIAT for hybrid sampler:")
 
 for basis_number in basis_list:
     IAT_val = get_path_IAT(samples=samplesHybrid, basis_number=basis_number,
-                burnin=burnin, thin_step=thin_step_hybrid, le_tol=100)
+                burnin=burnin_hybrid, thin_step=thin_step_hybrid, le_tol=100)
     print(f"basis {basis_number}: {IAT_val:.0f}")
 
 
@@ -139,14 +142,14 @@ print("\nIAT for Ensemble sampler, joint, L=8:")
 
 for basis_number in basis_list:
     IAT_val = get_path_IAT(samples=joint8_samplespaths_average, basis_number=basis_number,
-                burnin=burnin, thin_step=thin_step_ensemble, le_tol=100)
+                burnin=burnin_joint_8, thin_step=thin_step_ensemble, le_tol=100)
     print(f"basis {basis_number}: {IAT_val:.0f}")
 
 print("\nIAT for Ensemble sampler, joint, L=100:")
 
 for basis_number in basis_list:
     IAT_val = get_path_IAT(samples=joint100_samplespaths_average, basis_number=basis_number,
-                burnin=burnin, thin_step=thin_step_ensemble, le_tol=100)
+                burnin=burnin_joint_100, thin_step=thin_step_ensemble, le_tol=100)
     print(f"basis {basis_number}: {IAT_val:.0f}")
 
 
@@ -154,9 +157,8 @@ print("\nIAT for Ensemble sampler, MwG, L=100:")
 
 for basis_number in basis_list:
     IAT_val = get_path_IAT(samples=MwG_samplespaths_average, basis_number=basis_number,
-                burnin=burnin, thin_step=thin_step_ensemble, le_tol=100)
+                burnin=burnin_MwG, thin_step=thin_step_ensemble, le_tol=100)
     print(f"basis {basis_number}: {IAT_val:.0f}")
-
 
 # ==============================
 # ACF plots
@@ -165,38 +167,39 @@ for basis_number in basis_list:
 plt.rcParams.update({'font.size': 18})
 markerlist = ["X", "o", "v", "s", "D", "*"]
 markersize = 7
+colorlist = ["#CC79A7", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00"]
 
 
 num_lags = 50
 x_range = np.arange(0, (num_lags+1)*600, 600)
 
-fig, ax = plt.subplots(1,2, figsize=(12, 5))
+fig, ax = plt.subplots(2,1, figsize=(9, 12))
 
 for idx in range(2):
     ax[idx].ticklabel_format(axis="x", style="sci", scilimits=(0,0), useMathText=True)
 
 
-lesams = samples_alpha_pCN[burnin:]
+lesams = samples_alpha_pCN[burnin_pCN:]
 ax[0].plot(x_range[::2], acf(lesams[::2], nlags=num_lags, fft=True)[::2], label="pcn",
-           marker=markerlist[0], markersize=markersize)
+           marker=markerlist[0], markersize=markersize, c=colorlist[0])
 
-lesams = samples_alphaHybrid[burnin:]
+lesams = samples_alphaHybrid[burnin_hybrid:]
 ax[0].plot(x_range[::2], acf(lesams[::2], nlags=num_lags, fft=True)[::2], label="hybrid",
-           marker=markerlist[1], markersize=markersize)
+           marker=markerlist[1], markersize=markersize, c=colorlist[1])
 
 
 
-lesams = joint8_samplesAlpha_average[burnin:]
+lesams = joint8_samplesAlpha_average[burnin_joint_8:]
 p1 = ax[0].plot(x_range[::2], acf(lesams[::3], nlags=num_lags, fft=True)[::2], label="joint, L=8",
-           marker=markerlist[2], markersize=markersize)[0]
+           marker=markerlist[2], markersize=markersize, c=colorlist[2])[0]
 
-lesams = joint100_samplesAlpha_average[burnin:]
+lesams = joint100_samplesAlpha_average[burnin_joint_100:]
 ax[0].plot(x_range[::2], acf(lesams[::3], nlags=num_lags, fft=True)[::2], label="joint, L=100",
-           marker=markerlist[3], markersize=markersize)
+           marker=markerlist[3], markersize=markersize, c=colorlist[3])
 
-lesams = MwG_samplesAlpha_average[burnin:]
+lesams = MwG_samplesAlpha_average[burnin_MwG:]
 ax[0].plot(x_range[::2], acf(lesams[::3], nlags=num_lags, fft=True)[::2], label="MwG",
-           marker=markerlist[4], markersize=markersize)
+           marker=markerlist[4], markersize=markersize, c=colorlist[4])
 
 
 # ======
@@ -204,29 +207,29 @@ ax[0].plot(x_range[::2], acf(lesams[::3], nlags=num_lags, fft=True)[::2], label=
 num_lags = 25
 x_range = np.arange(0, (num_lags+1)*600, 600)
 
-lesams = samples_sigma_pCN[burnin:]
+lesams = samples_sigma_pCN[burnin_pCN:]
 ax[1].plot(x_range, acf(lesams[::2], nlags=num_lags, fft=True), label="pcn",
-           marker=markerlist[0], markersize=markersize)
+           marker=markerlist[0], markersize=markersize, c=colorlist[0])
 
-lesams = samples_sigmaHybrid[burnin:]
+lesams = samples_sigmaHybrid[burnin_hybrid:]
 ax[1].plot(x_range, acf(lesams[::2], nlags=num_lags, fft=True), label="hybrid",
-           marker=markerlist[1], markersize=markersize)
+           marker=markerlist[1], markersize=markersize, c=colorlist[1])
 
-lesams = joint8_samplesSigma_average[burnin:]
+lesams = joint8_samplesSigma_average[burnin_joint_8:]
 ax[1].plot(x_range, acf(lesams[::3], nlags=num_lags, fft=True), label="joint, L=8",
-           marker=markerlist[2], markersize=markersize)
+           marker=markerlist[2], markersize=markersize, c=colorlist[2])
 
-lesams = joint100_samplesSigma_average[burnin:]
+lesams = joint100_samplesSigma_average[burnin_joint_100:]
 ax[1].plot(x_range, acf(lesams[::3], nlags=num_lags, fft=True), label="joint, L=100",
-           marker=markerlist[3], markersize=markersize)
+           marker=markerlist[3], markersize=markersize, c=colorlist[3])
 
-lesams = MwG_samplesSigma_average[burnin:]
+lesams = MwG_samplesSigma_average[burnin_MwG:]
 ax[1].plot(x_range, acf(lesams[::3], nlags=num_lags, fft=True), label="MwG",
-           marker=markerlist[4], markersize=markersize)
+           marker=markerlist[4], markersize=markersize, c=colorlist[4])
 
 
-ax[1].set_title("ACF for Sigma", size=20)
-ax[0].set_title("ACF for Alpha", size=20)
+ax[1].set_title(r"ACF for $\sigma$", size=20)
+ax[0].set_title(r"ACF for $\alpha$", size=20)
 
 ax[0].set_xlabel("lags",size=20)
 ax[0].set_ylabel("ACF",size=20)
@@ -238,8 +241,8 @@ ax[1].set_ylabel("ACF",size=20)
 # plt.legend()
 fig.legend([],
            labels=[ "pCN", "hybrid", 'joint, L=8', "joint, L=100", "MwG"],
-           loc="center right",
-           bbox_to_anchor=(0,0.15,1,1)
+           loc="upper right",   # Position of legend
+           bbox_to_anchor=(-0.02,-0.04,1,1)
            )
 
 plt.tight_layout()
