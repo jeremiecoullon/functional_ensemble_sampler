@@ -23,7 +23,7 @@ Download the zip file from [here](https://lwr-inverse-mcmc.s3.eu-west-2.amazonaw
 - `advection_standard.py`: run the standard pCN sampler on the advection example
 - `advection_AIES.py`: run FES on the advection example. Modify the arguments in the `run_MCMC()` function at the bottom of the script to try different tuning parameters `M`. The corresponding omega parameters are given in lines 183-188
 
-#### Figures
+#### Figures
 
 - `generate_advection_IAT_ACF_figures.py`: print out the IAT values for the different values and create the ACF plot
 - `generate_advection_figure_conditional_sampling.py`: generate figure with conditional samples: `rho_0 | c`
@@ -37,7 +37,7 @@ Download the zip file from [here](https://lwr-inverse-mcmc.s3.eu-west-2.amazonaw
 - `langevin_ensemble_joint_update.py`: run FES with a joint update. Change the number of walkers (`L`) at the top of the script
 - `langevin_ensemble_MwG.py`: run FES with a MwG update.
 
-#### Figures
+#### Figures
 
 - `generate_langevin_figures_IAT_ACF.py`: print out the IAT values for the different values and create the ACF plot
 - `generate_langevin_figures_hybrid_and_posterior.py`: create plot showing the slow adaptation of the hybrid sampler along with the posterior plot for alpha, sigma, and X_t paths.
