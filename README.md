@@ -28,7 +28,7 @@ Download the zip file from [here](https://lwr-inverse-mcmc.s3.eu-west-2.amazonaw
 - `generate_advection_IAT_ACF_figures.py`: print out the IAT values for the different values and create the ACF plot
 - `generate_advection_figure_conditional_sampling.py`: generate figure with conditional samples: `rho_0 | c`
 
-### Langevin example
+### Langevin example
 
 #### Runs
 
