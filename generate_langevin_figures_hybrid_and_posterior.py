@@ -68,9 +68,9 @@ plt.rcParams.update({'font.size': 18})
 
 # alpha and sigma posterior pdf
 fig, ax = plt.subplots(2, figsize=(12, 8))
-ax[0].hist(np.exp(samplesAlpha[burnin_MwG:]), bins=170, color="#56B4E9")
+ax[0].hist(np.exp(samplesAlpha[burnin_MwG:]), bins=170, color="#56B4E9", density=True)
 ax[0].set_xlabel(r"$\alpha$", size=26)
-ax[1].hist(np.exp(samplesSigma[burnin_MwG:]), bins=150, color="#56B4E9")
+ax[1].hist(np.exp(samplesSigma[burnin_MwG:]), bins=150, color="#56B4E9", density=True)
 ax[1].set_xlabel(r"$\sigma$", size=26)
 
 ax[0].set_xlim((0, 55))
@@ -80,7 +80,8 @@ plt.tight_layout()
 plt.show()
 
 # ========
-# X_t paths:
+# X_t paths
+# ==============================
 rcParams.update({'font.size': 20})
 
 plot_thin_step = 30

@@ -169,6 +169,11 @@ for basis_number in basis_list:
 # ACF plots
 # ==============================
 
+
+# ==============================
+# ACF plot for alpha parameter
+# ==============================
+
 plt.rcParams.update({'font.size': 18})
 markerlist = ["X", "o", "v", "s", "D", "*"]
 markersize = 7
@@ -178,79 +183,130 @@ colorlist = ["#CC79A7", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00"]
 num_lags = 50
 x_range = np.arange(0, (num_lags+1)*600, 600)
 
-fig, ax = plt.subplots(2,1, figsize=(9, 12))
+plt.figure(figsize=(9, 7))
 
-for idx in range(2):
-    ax[idx].ticklabel_format(axis="x", style="sci", scilimits=(0,0), useMathText=True)
+# for idx in range(2):
+plt.ticklabel_format(axis="x", style="sci", scilimits=(0,0), useMathText=True)
 
 
 lesams = samples_alpha_pCN[burnin_pCN:]
-ax[0].plot(x_range[::2], acf(lesams[::2], nlags=num_lags, fft=True)[::2], label="pcn",
+plt.plot(x_range[::2], acf(lesams[::2], nlags=num_lags, fft=True)[::2], label="pCN",
            marker=markerlist[0], markersize=markersize, c=colorlist[0])
 
 lesams = samples_alphaHybrid[burnin_hybrid:]
-ax[0].plot(x_range[::2], acf(lesams[::2], nlags=num_lags, fft=True)[::2], label="hybrid",
+plt.plot(x_range[::2], acf(lesams[::2], nlags=num_lags, fft=True)[::2], label="hybrid",
            marker=markerlist[1], markersize=markersize, c=colorlist[1])
 
 
 
 lesams = joint8_samplesAlpha_average[burnin_joint_8:]
-p1 = ax[0].plot(x_range[::2], acf(lesams[::3], nlags=num_lags, fft=True)[::2], label="joint, L=8",
+plt.plot(x_range[::2], acf(lesams[::3], nlags=num_lags, fft=True)[::2], label="joint, L=8",
            marker=markerlist[2], markersize=markersize, c=colorlist[2])[0]
 
 lesams = joint100_samplesAlpha_average[burnin_joint_100:]
-ax[0].plot(x_range[::2], acf(lesams[::3], nlags=num_lags, fft=True)[::2], label="joint, L=100",
+plt.plot(x_range[::2], acf(lesams[::3], nlags=num_lags, fft=True)[::2], label="joint, L=100",
            marker=markerlist[3], markersize=markersize, c=colorlist[3])
 
 lesams = MwG_samplesAlpha_average[burnin_MwG:]
-ax[0].plot(x_range[::2], acf(lesams[::3], nlags=num_lags, fft=True)[::2], label="MwG",
+plt.plot(x_range[::2], acf(lesams[::3], nlags=num_lags, fft=True)[::2], label="MwG",
            marker=markerlist[4], markersize=markersize, c=colorlist[4])
 
+plt.xlabel("lags",size=20)
+plt.ylabel("ACF",size=20)
 
-# ======
-
-num_lags = 25
-x_range = np.arange(0, (num_lags+1)*600, 600)
-
-lesams = samples_sigma_pCN[burnin_pCN:]
-ax[1].plot(x_range, acf(lesams[::2], nlags=num_lags, fft=True), label="pcn",
-           marker=markerlist[0], markersize=markersize, c=colorlist[0])
-
-lesams = samples_sigmaHybrid[burnin_hybrid:]
-ax[1].plot(x_range, acf(lesams[::2], nlags=num_lags, fft=True), label="hybrid",
-           marker=markerlist[1], markersize=markersize, c=colorlist[1])
-
-lesams = joint8_samplesSigma_average[burnin_joint_8:]
-ax[1].plot(x_range, acf(lesams[::3], nlags=num_lags, fft=True), label="joint, L=8",
-           marker=markerlist[2], markersize=markersize, c=colorlist[2])
-
-lesams = joint100_samplesSigma_average[burnin_joint_100:]
-ax[1].plot(x_range, acf(lesams[::3], nlags=num_lags, fft=True), label="joint, L=100",
-           marker=markerlist[3], markersize=markersize, c=colorlist[3])
-
-lesams = MwG_samplesSigma_average[burnin_MwG:]
-ax[1].plot(x_range, acf(lesams[::3], nlags=num_lags, fft=True), label="MwG",
-           marker=markerlist[4], markersize=markersize, c=colorlist[4])
-
-
-ax[1].set_title(r"ACF for $\sigma$", size=20)
-ax[0].set_title(r"ACF for $\alpha$", size=20)
-
-ax[0].set_xlabel("lags",size=20)
-ax[0].set_ylabel("ACF",size=20)
-
-ax[1].set_xlabel("lags",size=20)
-ax[1].set_ylabel("ACF",size=20)
-
-
-# plt.legend()
-fig.legend([],
-           labels=[ "pCN", "hybrid", 'joint, L=8', "joint, L=100", "MwG"],
-           loc="upper right",   # Position of legend
-           bbox_to_anchor=(-0.02,-0.04,1,1)
-           )
+plt.legend()
 
 plt.tight_layout()
 # plt.savefig("images/paper_images/langevin_ACF.png")
 
 plt.show()
+
+
+# ==================================
+# ACF plots for both alpha and sigma
+
+# plt.rcParams.update({'font.size': 18})
+# markerlist = ["X", "o", "v", "s", "D", "*"]
+# markersize = 7
+# colorlist = ["#CC79A7", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00"]
+#
+#
+# num_lags = 50
+# x_range = np.arange(0, (num_lags+1)*600, 600)
+#
+# fig, ax = plt.subplots(2,1, figsize=(9, 12))
+#
+# for idx in range(2):
+#     ax[idx].ticklabel_format(axis="x", style="sci", scilimits=(0,0), useMathText=True)
+#
+#
+# lesams = samples_alpha_pCN[burnin_pCN:]
+# ax[0].plot(x_range[::2], acf(lesams[::2], nlags=num_lags, fft=True)[::2], label="pcn",
+#            marker=markerlist[0], markersize=markersize, c=colorlist[0])
+#
+# lesams = samples_alphaHybrid[burnin_hybrid:]
+# ax[0].plot(x_range[::2], acf(lesams[::2], nlags=num_lags, fft=True)[::2], label="hybrid",
+#            marker=markerlist[1], markersize=markersize, c=colorlist[1])
+#
+#
+#
+# lesams = joint8_samplesAlpha_average[burnin_joint_8:]
+# p1 = ax[0].plot(x_range[::2], acf(lesams[::3], nlags=num_lags, fft=True)[::2], label="joint, L=8",
+#            marker=markerlist[2], markersize=markersize, c=colorlist[2])[0]
+#
+# lesams = joint100_samplesAlpha_average[burnin_joint_100:]
+# ax[0].plot(x_range[::2], acf(lesams[::3], nlags=num_lags, fft=True)[::2], label="joint, L=100",
+#            marker=markerlist[3], markersize=markersize, c=colorlist[3])
+#
+# lesams = MwG_samplesAlpha_average[burnin_MwG:]
+# ax[0].plot(x_range[::2], acf(lesams[::3], nlags=num_lags, fft=True)[::2], label="MwG",
+#            marker=markerlist[4], markersize=markersize, c=colorlist[4])
+#
+#
+# # ======
+#
+# num_lags = 25
+# x_range = np.arange(0, (num_lags+1)*600, 600)
+#
+# lesams = samples_sigma_pCN[burnin_pCN:]
+# ax[1].plot(x_range, acf(lesams[::2], nlags=num_lags, fft=True), label="pcn",
+#            marker=markerlist[0], markersize=markersize, c=colorlist[0])
+#
+# lesams = samples_sigmaHybrid[burnin_hybrid:]
+# ax[1].plot(x_range, acf(lesams[::2], nlags=num_lags, fft=True), label="hybrid",
+#            marker=markerlist[1], markersize=markersize, c=colorlist[1])
+#
+# lesams = joint8_samplesSigma_average[burnin_joint_8:]
+# ax[1].plot(x_range, acf(lesams[::3], nlags=num_lags, fft=True), label="joint, L=8",
+#            marker=markerlist[2], markersize=markersize, c=colorlist[2])
+#
+# lesams = joint100_samplesSigma_average[burnin_joint_100:]
+# ax[1].plot(x_range, acf(lesams[::3], nlags=num_lags, fft=True), label="joint, L=100",
+#            marker=markerlist[3], markersize=markersize, c=colorlist[3])
+#
+# lesams = MwG_samplesSigma_average[burnin_MwG:]
+# ax[1].plot(x_range, acf(lesams[::3], nlags=num_lags, fft=True), label="MwG",
+#            marker=markerlist[4], markersize=markersize, c=colorlist[4])
+#
+#
+# ax[1].set_title(r"ACF for $\sigma$", size=20)
+# ax[0].set_title(r"ACF for $\alpha$", size=20)
+#
+# ax[0].set_xlabel("lags",size=20)
+# ax[0].set_ylabel("ACF",size=20)
+#
+# ax[1].set_xlabel("lags",size=20)
+# ax[1].set_ylabel("ACF",size=20)
+#
+#
+# # plt.legend()
+# fig.legend([],
+#            labels=[ "pCN", "hybrid", 'joint, L=8', "joint, L=100", "MwG"],
+#            loc="upper right",   # Position of legend
+#            bbox_to_anchor=(-0.02,-0.04,1,1)
+#            )
+#
+# plt.tight_layout()
+# # plt.savefig("images/paper_images/langevin_ACF.png")
+#
+# plt.show()

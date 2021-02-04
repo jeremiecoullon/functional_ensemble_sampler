@@ -16,3 +16,4 @@ drafts/*
 send_langevin_server.sh
 job_langevin_pcn.com
 *.com
+redo_fig1/

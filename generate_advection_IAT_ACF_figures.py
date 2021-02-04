@@ -168,7 +168,7 @@ ax[1].set_ylabel("ACF", size=20)
 
 # plt.legend()
 fig.legend([plot_pCN, plot_FES_0, plot_FES_1] + list(p_dict_FES.values()),
-           labels=['pCN', "M_0", "M=1", "M=5", "M=10", "M=20"],
+           labels=['pCN', "M=0", "M=1", "M=5", "M=10", "M=20"],
            loc="upper right",   # Position of legend
 #            borderaxespad=-0.2,    # Small spacing around legend box
            bbox_to_anchor=(-0.02,-0.04,1,1),
