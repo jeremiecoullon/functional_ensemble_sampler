@@ -10,7 +10,12 @@ def cov_exp(x,y):
     return sigma_prior*np.exp(-0.5*(1/l)*(x-y)**2)
 x_min, x_max = 0, 10
 
-num_pt = 200
+# ==============================
+# Resolution of function (ie: the brownian motion path)
+# num_pt = 200 # usual resolution
+num_pt = 400 # double resolution: to test the mesh-free property
+# ==============================
+
 IC_prior_mean = np.ones(num_pt)*prior_mean
 xs = np.linspace(x_min, x_max, num_pt)
 # build covariance matrix
@@ -28,6 +33,11 @@ def samplePrior():
 
 # Use saved true_IC & data array
 true_IC = np.genfromtxt("data/thesis_Advection_true_IC.csv")
+
+# interpolate true_IC if using double resolution
+if num_pt == 400:
+    true_IC = np.interp(xs, np.linspace(x_min, x_max, 200), true_IC)
+
 data_array = np.genfromtxt("data/advection_data_array_sigma02_t_1-2.csv") # t in (1, 2)
 
 # Generate advection data

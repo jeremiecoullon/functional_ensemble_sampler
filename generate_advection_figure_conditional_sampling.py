@@ -70,9 +70,9 @@ custom_lines = [Line2D([0], [0], color="#CC79A7", lw=4),
                Line2D([0], [0], color="#D55E00", lw=4)]
 plt.legend(custom_lines, ['$c=0.4$', '$c=0.5$', '$c=0.6$', 'true IC'], loc="upper right")
 
-plt.title(r"conditional $\rho_0|c$ samples", size=20)
+# plt.title(r"conditional $\rho_0|c$ samples", size=20)
 plt.xlabel("x", size=28)
-plt.ylabel(r"$\rho$", size=28, rotation=0)
+plt.ylabel(r"$\rho_0$", size=24, rotation=90)
 # plt.savefig("images/paper_images/advection_conditional_c.png")
 
 plt.show()

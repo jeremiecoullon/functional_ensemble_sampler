@@ -12,6 +12,16 @@ from advection_sampler.advection_posterior import logPriorIC, logPost, invG, sam
 L = 100 # number of walkers
 N = 20000000 # number of iterations
 
+
+# =====================
+# to run at double resolution, change `num_pt` in advection_posterior
+if num_pt == 400:
+    print("Running for twice the resolution")
+    double_resolution_string = "_double_res"
+else:
+    double_resolution_string = ""
+# =====================
+
 # =====================
 # # TEST SAMPLER: SAMPLE FROM THE PRIOR
 # omega = 1
@@ -56,16 +66,16 @@ def run_MCMC(M_trunc, omega):
     if L < M_trunc+2:
         raise ValueError(f"Number of walkers must be >= {M_trunc+2} (d+2)")
 
-    if 'global_storage' in os.environ:
+    if 'global_storage' in os.environ: # if running on Lancaster cluster
         global_storage_path = os.environ['global_storage'] + "/"
     else:
         global_storage_path = ""
-    dir_name_base = f"{global_storage_path}outputs/advection_sampler/loss_sd-02-t_1_2/ensemble_sampler/L_{L}"
+    dir_name_base = f"{global_storage_path}outputs/advection_sampler/loss_sd-02-t_1_2/ensemble_sampler/L_{L}{double_resolution_string}_alt"
     Path(f"{global_storage_path}outputs/advection_sampler").mkdir(exist_ok=True)
     Path(f"{global_storage_path}outputs/advection_sampler/loss_sd-02-t_1_2").mkdir(exist_ok=True)
     Path(f"{global_storage_path}outputs/advection_sampler/loss_sd-02-t_1_2/ensemble_sampler").mkdir(exist_ok=True)
     Path(dir_name_base).mkdir(exist_ok=True)
-    dir_name = f"{global_storage_path}outputs/advection_sampler/loss_sd-02-t_1_2/ensemble_sampler/L_{L}/M_{M_trunc}"
+    dir_name = f"{global_storage_path}outputs/advection_sampler/loss_sd-02-t_1_2/ensemble_sampler/L_{L}{double_resolution_string}_alt/M_{M_trunc}"
     Path(dir_name).mkdir(exist_ok=True)
 
     num_acceptsPCN = 0
@@ -140,7 +150,7 @@ def run_MCMC(M_trunc, omega):
             samplesU[i_save,1] = np.mean(currentU)
 
             logPostList[i_save, :] = currentLogPost[:]
-        if i%1000000 == 0:
+        if i%10000 == 0:
             print(f"Iteration {i}/{N}")
             np.savetxt(f"{dir_name}/IC_samples-L-{L}.txt", samples[:,1,:])
             np.savetxt(f"{dir_name}/u_samples-L-{L}.txt", samplesU[:,1])
@@ -175,7 +185,7 @@ def run_MCMC(M_trunc, omega):
 # M=1, omega=0.05
 # M=0, omega=0.04
 
-samples, samplesU, acceptance_ratepCN, acceptance_rateAIES = run_MCMC(M_trunc=0, omega=0.04)
+samples, samplesU, acceptance_ratepCN, acceptance_rateAIES = run_MCMC(M_trunc=10, omega=0.6)
 
 
 print(f"Acceptance rate for pCN: {acceptance_ratepCN:.1f}%")

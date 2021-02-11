@@ -38,17 +38,17 @@ ax[0].ticklabel_format(axis="x", style="sci", scilimits=(0,0), useMathText=True)
 ax[1].ticklabel_format(axis="x", style="sci", scilimits=(0,0), useMathText=True)
 
 ax[0].plot(np.arange(0, N_hybrid, thin_step_hybrid)[:_cut_samples_thin], cov_diag_array[:_cut_samples_thin,0])
-ax[0].set_ylabel(r'$\alpha$', size=26, rotation=0)
+ax[0].set_ylabel(r'$\log \alpha$', size=23, rotation=90)
 ax[0].yaxis.set_label_coords(-0.1,0.5)
 
 ax[1].plot(np.arange(0, N_hybrid, thin_step_hybrid)[:_cut_samples_thin], cov_diag_array[:_cut_samples_thin,1])
-ax[1].set_ylabel(r'$\sigma$', size=26, rotation=0)
+ax[1].set_ylabel(r'$\log \sigma$', size=23, rotation=90)
 ax[1].yaxis.set_label_coords(-0.1,0.5)
 
-ax[1].set_xlabel("Iteration", size=20)
+ax[1].set_xlabel("Iteration", size=23)
 
 plt.tight_layout()
-# plt.savefig("images/paper_images/langevin_hybrid-variance_adaptation.png")
+plt.savefig("images/paper_images/langevin_hybrid-variance_adaptation.png")
 
 # ==============================
 # Posterior plot
@@ -99,7 +99,7 @@ plt.plot(x_range, true_path, label="true path", c='#D55E00', lw=4, alpha=0.9)
 plt.ylim((-2.7, 2.7))
 plt.legend()
 plt.xlabel(r"$t$", size=26)
-plt.ylabel(r"$X_t$", size=26, rotation=0)
+plt.ylabel(r"$X_t$", size=26, rotation=90)
 
 # plt.savefig("images/paper_images/posterior_Xt_paths.png")
 plt.show()
